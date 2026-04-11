@@ -7,12 +7,15 @@ Go CLI (`intervals`) for the intervals.icu API. 148 operations across 13 resourc
 ## Build & Test
 
 ```bash
+export PATH="$HOME/go-dist/go/bin:$PATH"
 go build -o intervals .
 go test ./...
 go vet ./...
 ```
 
-Install to PATH: `go install .` then rename `~/go/bin/intervals-icu-cli` to `~/go/bin/intervals`.
+**Always install after building:** `go install . && cp ~/go/bin/intervals-icu-cli ~/go/bin/intervals`
+
+This must be done every time you make changes so the `intervals` binary on PATH stays current.
 
 ## Architecture
 
