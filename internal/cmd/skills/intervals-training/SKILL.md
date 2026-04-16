@@ -33,7 +33,7 @@ intervals activities <action> [flags]
 | `create-manual` | Create a manual activity (`--json`) |
 | `create-manual-bulk` | Create multiple manual activities (`--json`) |
 | `upload` | Upload an activity file FIT/TCX/GPX (`--file`) |
-| `download-csv` | Download all activities as CSV |
+| `download-csv` | Download all activities as CSV (prints to stdout, redirect with `> file.csv`) |
 | `list-around` | List activities around a specific activity (`--activity-id`) |
 | `get-multiple` | Get multiple activities by IDs (`--ids`) |
 
@@ -46,9 +46,14 @@ intervals activities list --oldest 2026-01-01 --fields id,name,start_date_local,
 # Search for specific activities
 intervals activities search --query "tempo" --fields id,name,start_date_local
 
+# Download all activities as CSV for bulk analysis (preferred over paginated list calls)
+intervals activities download-csv > /tmp/activities.csv
+
 # Create a manual activity (use --dry-run first)
 intervals activities create-manual --dry-run --json '{"name": "Morning Run", "type": "Run", "start_date_local": "2026-04-11T07:00:00", "elapsed_time": 3600}'
 ```
+
+> **Bulk analysis tip:** For analysis spanning many activities, prefer `download-csv` over paginated `list` calls. The CSV contains all 88 fields for the entire history. Use `--format ndjson` with `list` only when you need a filtered subset.
 
 ## activity
 
@@ -142,7 +147,7 @@ intervals events <action> [flags]
 intervals events list --oldest 2026-04-07 --newest 2026-04-13 --fields id,name,start_date_local,category,icu_training_load
 
 # Create a training event (use --dry-run first)
-intervals events create --dry-run --json '{"name": "Threshold Intervals", "start_date_local": "2026-04-15", "category": "WORKOUT"}'
+intervals events create --dry-run --json '{"name": "Threshold Intervals", "start_date_local": "2026-04-15T08:00:00", "category": "WORKOUT"}'
 
 # Mark a workout as completed
 intervals events mark-done --event-id 12345

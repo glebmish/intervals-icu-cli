@@ -29,7 +29,7 @@ intervals athlete <action> [flags]
 | `get` | Get athlete profile |
 | `update` | Update athlete profile (`--json`) |
 | `profile` | Get athlete profile details |
-| `summary` | Get athlete summary (`--oldest`, `--newest`) |
+| `summary` | Get athlete summary (`--start`, `--end`, `--tags`, `--ext`) |
 | `training-plan` | Get athlete training plan |
 | `update-training-plan` | Update training plan (`--json`) |
 | `apply-plan-changes` | Apply pending plan changes |
@@ -41,15 +41,15 @@ intervals athlete <action> [flags]
 | `route-update` | Update a route (`--route-id`, `--json`) |
 | `route-similarity` | Get similarity between routes (`--route-id`, `--other-route-id`) |
 | `chats` | List athlete chats |
-| `fitness-model-events` | Get fitness model events |
-| `power-hr-curve` | Get power/HR curve (`--oldest`, `--newest`, `--type`) |
-| `power-curves` | Get power curves (`--oldest`, `--newest`) |
-| `pace-curves` | Get pace curves (`--oldest`, `--newest`, `--type`) |
-| `hr-curves` | Get HR curves (`--oldest`, `--newest`, `--type`) |
+| `fitness-model-events` | Get fitness model events (may return empty — use `wellness list` with `--fields ctl,atl` for reliable CTL/ATL data) |
+| `power-hr-curve` | Get power/HR curve (`--start`, `--end`) |
+| `power-curves` | Get power curves (`--oldest`, `--newest`, **`--type` required**, `--fatigue`, `--filters`, `--secs`, `--ext`) |
+| `pace-curves` | Get pace curves (`--oldest`, `--newest`, **`--type` required**, `--filters`, `--distances`, `--gap`, `--ext`) |
+| `hr-curves` | Get HR curves (`--oldest`, `--newest`, **`--type` required**, `--filters`, `--secs`, `--ext`) |
 | `mmp-model` | Get MMP model |
-| `activity-power-curves` | Get activity power curves (`--oldest`, `--newest`) |
-| `activity-pace-curves` | Get activity pace curves (`--oldest`, `--newest`, `--type`) |
-| `activity-hr-curves` | Get activity HR curves (`--oldest`, `--newest`, `--type`) |
+| `activity-power-curves` | Get activity power curves (`--oldest`, `--newest`, `--type`, `--fatigue`, `--filters`, `--secs`, `--ext`) |
+| `activity-pace-curves` | Get activity pace curves (`--oldest`, `--newest`, `--type`, `--filters`, `--distances`, `--gap`, `--ext`) |
+| `activity-hr-curves` | Get activity HR curves (`--oldest`, `--newest`, `--type`, `--filters`, `--secs`, `--ext`) |
 | `duplicate-events` | Duplicate events (`--json`) |
 | `download-workout` | Download a workout file (`--workout-id`) |
 | `download-fit-files` | Download FIT files (`--ids`) |
@@ -61,11 +61,17 @@ intervals athlete <action> [flags]
 # Get athlete profile
 intervals athlete get --fields id,name,email,ftp,weight
 
-# Get power curve over last 90 days
-intervals athlete power-curves --oldest 2026-01-11 --newest 2026-04-11
+# Get athlete summary for a date range (note: uses --start/--end, not --oldest/--newest)
+intervals athlete summary --start 2026-01-01 --end 2026-04-11
 
-# Get fitness model events (CTL/ATL/TSB)
-intervals athlete fitness-model-events --fields date,ctl,atl,tsb
+# Get power curves over last 90 days (--type is required)
+intervals athlete power-curves --oldest 2026-01-11 --newest 2026-04-11 --type Ride
+
+# Get pace curves for running
+intervals athlete pace-curves --oldest 2026-01-11 --newest 2026-04-11 --type Run
+
+# Get CTL/ATL/TSB — use wellness list (more reliable than fitness-model-events)
+intervals wellness list --oldest 2026-01-01 --newest 2026-04-11 --fields id,ctl,atl --format ndjson
 ```
 
 ## sport-settings

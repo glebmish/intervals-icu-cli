@@ -41,7 +41,7 @@ intervals activities list --oldest 2026-01-01 --fields id,name,start_date_local
 intervals activity get --activity-id a1 --fields id,name,type,distance
 
 # Create a calendar event
-intervals events create --json '{"name": "Threshold Run", "start_date_local": "2026-04-15"}'
+intervals events create --json '{"name": "Threshold Run", "start_date_local": "2026-04-15T08:00:00"}'
 
 # Discover available operations
 intervals schema --list

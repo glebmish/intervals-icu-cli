@@ -33,7 +33,7 @@ intervals wellness get --date 2026-04-11
 
 ### Writing Data
 ```bash
-intervals events create --json '{"name": "Threshold", "start_date_local": "2026-04-15"}'
+intervals events create --json '{"name": "Threshold", "start_date_local": "2026-04-15T08:00:00"}'
 intervals activity update --activity-id a1 --json '{"name": "Updated Name"}'
 ```
 

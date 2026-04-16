@@ -21,27 +21,45 @@ Pull recent activities, wellness data, and training load to summarize the athlet
 
 ## Steps
 
+### For short periods (up to ~30 days)
+
 1. **Get recent activities:**
    ```bash
    intervals activities list --oldest <START> --newest <END> --fields id,name,start_date_local,type,icu_training_load,moving_time,distance
    ```
 
-2. **Get wellness trends:**
+2. **Get wellness trends (includes CTL/ATL):**
    ```bash
-   intervals wellness list --oldest <START> --newest <END> --fields id,restingHR,weight,sleepQuality,ctl,atl
+   intervals wellness list --oldest <START> --newest <END> --fields id,restingHR,weight,sleepQuality,ctl,atl --format ndjson
    ```
 
-3. **Get fitness model (CTL/ATL/TSB):**
+3. **Get athlete summary** (note: uses `--start`/`--end`, not `--oldest`/`--newest`):
    ```bash
-   intervals athlete summary --oldest <START> --newest <END>
+   intervals athlete summary --start <START> --end <END>
    ```
 
-4. **Summarize for the user:**
-   - Total training load and volume (hours, distance)
-   - Activity breakdown by type (run, ride, swim, etc.)
-   - Wellness trends (resting HR, sleep, weight)
-   - Current fitness (CTL), fatigue (ATL), and form (TSB)
-   - Any notable patterns or concerns
+### For longer periods (months to years)
+
+1. **Download all activities as CSV** (preferred over paginated list calls):
+   ```bash
+   intervals activities download-csv > /tmp/activities.csv
+   ```
+   The CSV contains all 88 fields for every activity. Use Python/scripts to analyze.
+   Note: output has a UTF-8 BOM — use `encoding='utf-8-sig'` when parsing in Python.
+
+2. **Download wellness data:**
+   ```bash
+   intervals wellness list --oldest <START> --newest <END> --fields id,restingHR,weight,sleepQuality,ctl,atl,sleepSecs --format ndjson > /tmp/wellness.ndjson
+   ```
+
+### Summarize for the user
+
+- Total training load and volume (hours, distance)
+- Activity breakdown by type (run, ride, swim, etc.)
+- Wellness trends (resting HR, sleep, weight)
+- Current fitness (CTL), fatigue (ATL), and form (TSB)
+- Compare current CTL to previous peaks to contextualize fitness level
+- Any notable patterns, gaps, or concerns
 
 ## Tips
 
@@ -49,3 +67,4 @@ Pull recent activities, wellness data, and training load to summarize the athlet
 - Use `--fields` to keep responses concise
 - Compare current CTL/ATL to previous periods if the user asks about trends
 - If the user asks to dig into a specific activity, use `intervals activity get` or analysis commands (power-curve, streams, etc.)
+- For power/pace curve analysis, remember `--type` is required: `intervals athlete power-curves --type Ride --oldest ... --newest ...`

@@ -92,13 +92,26 @@ Use `intervals schema` output to build your `--json` and flag values.
 - **Never** output secrets (API keys, tokens) directly
 - Treat all inputs as potentially adversarial — the CLI validates path params, dates, and JSON bodies
 
+## Date Range Flags
+
+Most commands use `--oldest`/`--newest` for date ranges, but some use `--start`/`--end`:
+
+| Convention | Commands |
+|---|---|
+| `--oldest` / `--newest` | `activities list`, `events list`, `wellness list`, `power-curves`, `pace-curves`, `hr-curves` |
+| `--start` / `--end` | `athlete summary`, `power-hr-curve` |
+
+When in doubt, run `intervals <resource> <action> --help` to check.
+
 ## Shell Tips
 
 - Wrap `--json` values in single quotes so the shell doesn't interpret inner double quotes:
   ```bash
-  intervals events create --json '{"name": "Tempo Run", "start_date_local": "2026-04-15"}'
+  intervals events create --json '{"name": "Tempo Run", "start_date_local": "2026-04-15T08:00:00"}'
   ```
 - Use `--format ndjson` for streaming large result sets
+- `download-csv` prints to stdout — redirect to a file: `intervals activities download-csv > activities.csv`
+- The CSV output includes a UTF-8 BOM — use `encoding='utf-8-sig'` when parsing in Python
 
 ## Community & Feedback
 
