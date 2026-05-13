@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/glebmish/intervals-icu-cli/internal/validate"
 	"github.com/spf13/cobra"
 )
@@ -30,9 +28,9 @@ func newWellnessGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get wellness record for a date",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			date, _ := cmd.Flags().GetString("date")
-			if date == "" {
-				return fmt.Errorf("--date is required (YYYY-MM-DD)")
+			date, err := requireString(cmd, "date")
+			if err != nil {
+				return err
 			}
 			if err := validate.DateParam("date", date); err != nil {
 				return err
@@ -50,23 +48,22 @@ func newWellnessUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update wellness record for a date",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			date, _ := cmd.Flags().GetString("date")
-			if date == "" {
-				return fmt.Errorf("--date is required (YYYY-MM-DD)")
+			date, err := requireString(cmd, "date")
+			if err != nil {
+				return err
 			}
 			if err := validate.DateParam("date", date); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Wellness payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"date": date}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/wellness/{date}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("date", "", "Date (YYYY-MM-DD, required)")
-	cmd.Flags().String("json", "", "Wellness JSON payload (required)")
 	return cmd
 }
 
@@ -75,14 +72,13 @@ func newWellnessUpdateCurrentCmd() *cobra.Command {
 		Use:   "update-current",
 		Short: "Update wellness record for current day",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Wellness payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/wellness", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Wellness JSON payload (required)")
 	return cmd
 }
 
@@ -91,14 +87,13 @@ func newWellnessUpdateBulkCmd() *cobra.Command {
 		Use:   "update-bulk",
 		Short: "Bulk update wellness records",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with array of Wellness payloads")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/wellness-bulk", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "JSON array of Wellness payloads (required)")
 	return cmd
 }
 
@@ -107,9 +102,9 @@ func newWellnessUploadCmd() *cobra.Command {
 		Use:   "upload",
 		Short: "Upload wellness data",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Wellness payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if v, _ := cmd.Flags().GetBool("ignore-missing-fields"); v {
@@ -118,7 +113,6 @@ func newWellnessUploadCmd() *cobra.Command {
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/wellness", params, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Wellness JSON payload (required)")
 	cmd.Flags().Bool("ignore-missing-fields", false, "Ignore missing fields in payload")
 	return cmd
 }

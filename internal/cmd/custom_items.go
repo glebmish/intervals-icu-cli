@@ -46,9 +46,9 @@ func newCustomItemsGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get a custom item by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			itemID, _ := cmd.Flags().GetString("item-id")
-			if itemID == "" {
-				return fmt.Errorf("--item-id is required")
+			itemID, err := requireString(cmd, "item-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("item-id", itemID); err != nil {
 				return err
@@ -66,14 +66,13 @@ func newCustomItemsCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create a custom dashboard item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with custom item payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/custom-item", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Custom item JSON payload (required)")
 	return cmd
 }
 
@@ -82,23 +81,22 @@ func newCustomItemsUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update a custom dashboard item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			itemID, _ := cmd.Flags().GetString("item-id")
-			if itemID == "" {
-				return fmt.Errorf("--item-id is required")
+			itemID, err := requireString(cmd, "item-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("item-id", itemID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with custom item payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"itemId": itemID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/custom-item/{itemId}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("item-id", "", "Custom item ID (required)")
-	cmd.Flags().String("json", "", "Custom item JSON payload (required)")
 	return cmd
 }
 
@@ -107,9 +105,9 @@ func newCustomItemsDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a custom dashboard item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			itemID, _ := cmd.Flags().GetString("item-id")
-			if itemID == "" {
-				return fmt.Errorf("--item-id is required")
+			itemID, err := requireString(cmd, "item-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("item-id", itemID); err != nil {
 				return err
@@ -127,16 +125,16 @@ func newCustomItemsUploadImageCmd() *cobra.Command {
 		Use:   "upload-image",
 		Short: "Upload an image for a custom item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			itemID, _ := cmd.Flags().GetString("item-id")
-			if itemID == "" {
-				return fmt.Errorf("--item-id is required")
+			itemID, err := requireString(cmd, "item-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("item-id", itemID); err != nil {
 				return err
 			}
-			file, _ := cmd.Flags().GetString("file")
-			if file == "" {
-				return fmt.Errorf("--file is required")
+			file, err := requireString(cmd, "file")
+			if err != nil {
+				return err
 			}
 
 			data, err := os.ReadFile(file)
@@ -175,13 +173,12 @@ func newCustomItemsUpdateIndexesCmd() *cobra.Command {
 		Use:   "update-indexes",
 		Short: "Update custom item indexes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with indexes payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/custom-item-indexes", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Indexes JSON payload (required)")
 	return cmd
 }

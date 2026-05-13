@@ -1,16 +1,41 @@
-// main.go
 package main
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
+	"github.com/glebmish/intervals-icu-cli/internal/api"
+	"github.com/glebmish/intervals-icu-cli/internal/cliexit"
 	"github.com/glebmish/intervals-icu-cli/internal/cmd"
 )
 
+// main does not print the error — cobra already does (SilenceUsage:true,
+// SilenceErrors:false). Printing here on top would double every error.
 func main() {
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		os.Exit(exitCode(err))
 	}
+}
+
+func exitCode(err error) int {
+	var authErr *cliexit.AuthError
+	if errors.As(err, &authErr) {
+		return 2
+	}
+	var valErr *cliexit.ValidationError
+	if errors.As(err, &valErr) {
+		return 3
+	}
+	var discErr *cliexit.DiscoveryError
+	if errors.As(err, &discErr) {
+		return 4
+	}
+	var apiErr *api.APIError
+	if errors.As(err, &apiErr) {
+		if apiErr.IsAuth() {
+			return 2
+		}
+		return 1
+	}
+	return 1
 }

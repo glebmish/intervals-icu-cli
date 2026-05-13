@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/glebmish/intervals-icu-cli/internal/validate"
 	"github.com/spf13/cobra"
 )
@@ -63,14 +61,13 @@ func newAthleteUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update athlete profile",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with athlete payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Athlete JSON payload (required)")
 	return cmd
 }
 
@@ -137,14 +134,13 @@ func newAthleteUpdateTrainingPlanCmd() *cobra.Command {
 		Use:   "update-training-plan",
 		Short: "Update athlete training plan",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with training plan payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/training-plan", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Training plan JSON payload (required)")
 	return cmd
 }
 
@@ -175,14 +171,13 @@ func newAthleteUpdateWeatherConfigCmd() *cobra.Command {
 		Use:   "update-weather-config",
 		Short: "Update athlete weather configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with weather config payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/weather-config", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Weather config JSON payload (required)")
 	return cmd
 }
 
@@ -213,9 +208,9 @@ func newAthleteRouteGetCmd() *cobra.Command {
 		Use:   "route-get",
 		Short: "Get a specific route",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			routeID, _ := cmd.Flags().GetString("route-id")
-			if routeID == "" {
-				return fmt.Errorf("--route-id is required")
+			routeID, err := requireString(cmd, "route-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("route-id", routeID); err != nil {
 				return err
@@ -237,23 +232,22 @@ func newAthleteRouteUpdateCmd() *cobra.Command {
 		Use:   "route-update",
 		Short: "Update a route",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			routeID, _ := cmd.Flags().GetString("route-id")
-			if routeID == "" {
-				return fmt.Errorf("--route-id is required")
+			routeID, err := requireString(cmd, "route-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("route-id", routeID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with route payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"route_id": routeID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/routes/{route_id}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("route-id", "", "Route ID (required)")
-	cmd.Flags().String("json", "", "Route JSON payload (required)")
 	return cmd
 }
 
@@ -262,16 +256,16 @@ func newAthleteRouteSimilarityCmd() *cobra.Command {
 		Use:   "route-similarity",
 		Short: "Get similarity between two routes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			routeID, _ := cmd.Flags().GetString("route-id")
-			if routeID == "" {
-				return fmt.Errorf("--route-id is required")
+			routeID, err := requireString(cmd, "route-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("route-id", routeID); err != nil {
 				return err
 			}
-			otherID, _ := cmd.Flags().GetString("other-id")
-			if otherID == "" {
-				return fmt.Errorf("--other-id is required")
+			otherID, err := requireString(cmd, "other-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("other-id", otherID); err != nil {
 				return err
@@ -532,14 +526,13 @@ func newAthleteDuplicateEventsCmd() *cobra.Command {
 		Use:   "duplicate-events",
 		Short: "Duplicate events for the athlete",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with duplicate events payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/duplicate-events", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Duplicate events JSON payload (required)")
 	return cmd
 }
 
@@ -549,9 +542,9 @@ func newAthleteDownloadWorkoutCmd() *cobra.Command {
 		Short: "Download a workout file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ext, _ := cmd.Flags().GetString("ext")
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with workout payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if ext != "" {
@@ -562,7 +555,6 @@ func newAthleteDownloadWorkoutCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("ext", "", "File extension (e.g. .zwo)")
-	cmd.Flags().String("json", "", "Workout JSON payload (required)")
 	return cmd
 }
 
@@ -588,7 +580,6 @@ func newAthleteDownloadFitFilesCmd() *cobra.Command {
 	cmd.Flags().Bool("power", false, "Include power data")
 	cmd.Flags().Bool("hr", false, "Include heart rate data")
 	cmd.Flags().String("ids", "", "Comma-separated activity IDs")
-	cmd.Flags().String("json", "", "Optional JSON payload")
 	return cmd
 }
 

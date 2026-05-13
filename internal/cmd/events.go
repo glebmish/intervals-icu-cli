@@ -74,9 +74,9 @@ func newEventsGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get a single event by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eventID, _ := cmd.Flags().GetString("event-id")
-			if eventID == "" {
-				return fmt.Errorf("--event-id is required")
+			eventID, err := requireString(cmd, "event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("event-id", eventID); err != nil {
 				return err
@@ -94,9 +94,9 @@ func newEventsCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create a new event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Event payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if v, _ := cmd.Flags().GetString("upsert-on-uid"); v != "" {
@@ -105,7 +105,6 @@ func newEventsCreateCmd() *cobra.Command {
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/events", params, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Event JSON payload (required)")
 	cmd.Flags().String("upsert-on-uid", "", "Upsert on UID query param")
 	return cmd
 }
@@ -115,23 +114,22 @@ func newEventsUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update an event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eventID, _ := cmd.Flags().GetString("event-id")
-			if eventID == "" {
-				return fmt.Errorf("--event-id is required")
+			eventID, err := requireString(cmd, "event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("event-id", eventID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Event payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"eventId": eventID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/events/{eventId}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("event-id", "", "Event ID (required)")
-	cmd.Flags().String("json", "", "Event JSON payload (required)")
 	return cmd
 }
 
@@ -140,9 +138,9 @@ func newEventsDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete an event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eventID, _ := cmd.Flags().GetString("event-id")
-			if eventID == "" {
-				return fmt.Errorf("--event-id is required")
+			eventID, err := requireString(cmd, "event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("event-id", eventID); err != nil {
 				return err
@@ -168,9 +166,9 @@ func newEventsUpdateBulkCmd() *cobra.Command {
 		Use:   "update-bulk",
 		Short: "Bulk update events",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with array of Event payloads")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if v, _ := cmd.Flags().GetString("oldest"); v != "" {
@@ -188,7 +186,6 @@ func newEventsUpdateBulkCmd() *cobra.Command {
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/events", params, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "JSON array of Event payloads (required)")
 	cmd.Flags().String("oldest", "", "Start date (YYYY-MM-DD)")
 	cmd.Flags().String("newest", "", "End date (YYYY-MM-DD)")
 	return cmd
@@ -199,10 +196,13 @@ func newEventsDeleteRangeCmd() *cobra.Command {
 		Use:   "delete-range",
 		Short: "Delete events in date range",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			oldest, _ := cmd.Flags().GetString("oldest")
-			newest, _ := cmd.Flags().GetString("newest")
-			if oldest == "" || newest == "" {
-				return fmt.Errorf("--oldest and --newest required")
+			oldest, err := requireString(cmd, "oldest")
+			if err != nil {
+				return err
+			}
+			newest, err := requireString(cmd, "newest")
+			if err != nil {
+				return err
 			}
 			if err := validate.DateParam("oldest", oldest); err != nil {
 				return err
@@ -228,14 +228,13 @@ func newEventsDeleteBulkCmd() *cobra.Command {
 		Use:   "delete-bulk",
 		Short: "Bulk delete events by IDs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with array of event IDs")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/events/bulk-delete", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "JSON array of event IDs (required)")
 	return cmd
 }
 
@@ -244,9 +243,9 @@ func newEventsCreateBulkCmd() *cobra.Command {
 		Use:   "create-bulk",
 		Short: "Bulk create events",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with array of Event payloads")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if v, _ := cmd.Flags().GetBool("upsert"); v {
@@ -258,7 +257,6 @@ func newEventsCreateBulkCmd() *cobra.Command {
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/events/bulk", params, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "JSON array of Event payloads (required)")
 	cmd.Flags().Bool("upsert", false, "Upsert events")
 	cmd.Flags().Bool("upsert-on-uid", false, "Upsert on UID")
 	return cmd
@@ -269,9 +267,9 @@ func newEventsMarkDoneCmd() *cobra.Command {
 		Use:   "mark-done",
 		Short: "Mark an event as done",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eventID, _ := cmd.Flags().GetString("event-id")
-			if eventID == "" {
-				return fmt.Errorf("--event-id is required")
+			eventID, err := requireString(cmd, "event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("event-id", eventID); err != nil {
 				return err
@@ -289,14 +287,13 @@ func newEventsApplyPlanCmd() *cobra.Command {
 		Use:   "apply-plan",
 		Short: "Apply a training plan",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with plan payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/events/apply-plan", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Plan JSON payload (required)")
 	return cmd
 }
 
@@ -305,9 +302,9 @@ func newEventsDownloadWorkoutCmd() *cobra.Command {
 		Use:   "download-workout",
 		Short: "Download workout file for an event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			eventID, _ := cmd.Flags().GetString("event-id")
-			if eventID == "" {
-				return fmt.Errorf("--event-id is required")
+			eventID, err := requireString(cmd, "event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("event-id", eventID); err != nil {
 				return err

@@ -8,11 +8,19 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/glebmish/intervals-icu-cli/internal/cliexit"
 	"github.com/spf13/cobra"
 )
 
 //go:embed openapi-spec.json
 var specData []byte
+
+func discoveryErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &cliexit.DiscoveryError{Err: err}
+}
 
 type operationEntry struct {
 	CommandName string
@@ -20,6 +28,161 @@ type operationEntry struct {
 	Method      string
 	Path        string
 	PathItem    map[string]interface{}
+}
+
+// operationIDToCommand maps spec operationIds → CLI command names.
+// The bijection tests in schema_test.go enforce that this map is in sync with
+// both the embedded spec (every operationId mapped) and the cobra tree
+// (every mapped name resolves to a registered command).
+var operationIDToCommand = map[string]string{
+	"applyCurrentPlanChanges":        "athlete.apply-plan-changes",
+	"applyPlan":                      "events.apply-plan",
+	"applyToActivities":              "sport-settings.apply",
+	"calcDistanceEtc":                "gear.calc",
+	"checkMerge":                     "athlete.route-similarity",
+	"createCustomItem":               "custom-items.create",
+	"createEvent":                    "events.create",
+	"createFolder":                   "folders.create",
+	"createGear":                     "gear.create",
+	"createManualActivity":           "activities.create-manual",
+	"createMultipleEvents":           "events.create-bulk",
+	"createMultipleManualActivities": "activities.create-manual-bulk",
+	"createMultipleWorkouts":         "workouts.create-bulk",
+	"createReminder":                 "gear.create-reminder",
+	"createSettings":                 "sport-settings.create",
+	"createSharedEvent":              "shared-events.create",
+	"createWorkout":                  "workouts.create",
+	"duplicateEvents":                "athlete.duplicate-events",
+	"deleteActivity":                 "activity.delete",
+	"deleteCustomItem":               "custom-items.delete",
+	"deleteEvent":                    "events.delete",
+	"deleteEvents":                   "events.delete-range",
+	"deleteEventsBulk":               "events.delete-bulk",
+	"deleteFolder":                   "folders.delete",
+	"deleteGear":                     "gear.delete",
+	"deleteIntervals":                "activity.delete-intervals",
+	"deleteMessage":                  "chats.delete-message",
+	"deleteReminder":                 "gear.delete-reminder",
+	"deleteSettings":                 "sport-settings.delete",
+	"deleteSharedEvent":              "shared-events.delete",
+	"deleteWorkout":                  "workouts.delete",
+	"disconnectApp":                  "misc.disconnect-app",
+	"downloadActivitiesAsCSV":        "activities.download-csv",
+	"downloadActivityFile":           "activity.file",
+	"downloadActivityFitFile":        "activity.fit-file",
+	"downloadActivityFitFiles":       "athlete.download-fit-files",
+	"downloadActivityGpxFile":        "activity.gpx-file",
+	"downloadWorkout":                "misc.download-workout",
+	"downloadWorkoutForAthlete":      "athlete.download-workout",
+	"downloadWorkout_1":              "events.download-workout",
+	"downloadWorkouts":               "workouts.download",
+	"duplicateWorkouts":              "workouts.duplicate",
+	"findBestEfforts":                "activity.best-efforts",
+	"getActivities":                  "activities.get-multiple",
+	"getActivity":                    "activity.get",
+	"getActivityHRCurve":             "activity.hr-curve",
+	"getActivityMap":                 "activity.map",
+	"getActivityPaceCurve":           "activity.pace-curve",
+	"getActivityPowerCurve":          "activity.power-curve",
+	"getActivityPowerSpikeModel":     "activity.power-spike-model",
+	"getActivitySegments":            "activity.segments",
+	"getActivityStreams":             "activity.streams",
+	"getActivityWeatherSummary":      "activity.weather-summary",
+	"getAthlete":                     "athlete.get",
+	"getAthleteMMPModel":             "athlete.mmp-model",
+	"getAthleteProfile":              "athlete.profile",
+	"getAthleteRoute":                "athlete.route-get",
+	"getAthleteSummary":              "athlete.summary",
+	"getAthleteTrainingPlan":         "athlete.training-plan",
+	"getCustomItem":                  "custom-items.get",
+	"getForecast":                    "athlete.weather-forecast",
+	"getGapHistogram":                "activity.gap-histogram",
+	"getHRHistogram":                 "activity.hr-histogram",
+	"getHRTrainingLoadModel":         "activity.hr-load-model",
+	"getIntervalStats":               "activity.interval-stats",
+	"getIntervals":                   "activity.intervals",
+	"getPaceHistogram":               "activity.pace-histogram",
+	"getPowerHRCurve":                "athlete.power-hr-curve",
+	"getPowerHistogram":              "activity.power-histogram",
+	"getPowerVsHR":                   "activity.power-vs-hr",
+	"getRecord":                      "wellness.get",
+	"getSettings":                    "sport-settings.get-device",
+	"getSettings_1":                  "sport-settings.get",
+	"getSharedEvent":                 "shared-events.get-by-slug",
+	"getSharedEvent_1":               "shared-events.get",
+	"getTimeAtHR":                    "activity.time-at-hr",
+	"getWeatherConfig":               "athlete.weather-config",
+	"importWorkoutFile":              "folders.import-workout",
+	"listActivities":                 "activities.list",
+	"listActivitiesAround":           "activities.list-around",
+	"listActivityHRCurves":           "athlete.activity-hr-curves",
+	"listActivityMessages":           "activity.messages",
+	"listActivityPaceCurves":         "athlete.activity-pace-curves",
+	"listActivityPowerCurves":        "athlete.activity-power-curves",
+	"listActivityPowerCurves_1":      "activity.power-curves",
+	"listAthleteHRCurves":            "athlete.hr-curves",
+	"listAthletePaceCurves":          "athlete.pace-curves",
+	"listAthletePowerCurves":         "athlete.power-curves",
+	"listAthleteRoutes":              "athlete.routes",
+	"listChats":                      "athlete.chats",
+	"listCustomItems":                "custom-items.list",
+	"listEvents":                     "events.list",
+	"listFitnessModelEvents":         "athlete.fitness-model-events",
+	"listFolderSharedWith":           "folders.shared-with",
+	"listFolders":                    "folders.list",
+	"listGear":                       "gear.list",
+	"listMatchingActivities":         "sport-settings.matching-activities",
+	"listMessages":                   "chats.messages",
+	"listPaceDistances":              "misc.pace-distances",
+	"listPaceDistancesForSport":      "sport-settings.pace-distances",
+	"listSettings":                   "sport-settings.list",
+	"listTags":                       "workouts.tags",
+	"listTags_1":                     "events.tags",
+	"listTags_2":                     "athlete.tags",
+	"listWellnessRecords":            "wellness.list",
+	"listWorkouts":                   "workouts.list",
+	"markEventAsDone":                "events.mark-done",
+	"replaceGear":                    "gear.replace",
+	"searchForActivities":            "activities.search",
+	"searchForActivitiesFull":        "activities.search-full",
+	"searchForIntervals":             "activities.interval-search",
+	"sendActivityMessage":            "activity.send-message",
+	"sendMessage":                    "chats.send",
+	"showChat":                       "chats.get",
+	"showEvent":                      "events.get",
+	"showWorkout":                    "workouts.get",
+	"splitInterval":                  "activity.split-interval",
+	"updateActivity":                 "activity.update",
+	"updateActivityStreams":          "activity.update-streams",
+	"updateAthlete":                  "athlete.update",
+	"updateAthletePlan":              "athlete.update-training-plan",
+	"updateAthletePlans":             "misc.update-athlete-plans",
+	"updateAthleteRoute":             "athlete.route-update",
+	"updateCustomItem":               "custom-items.update",
+	"updateCustomItemImage":          "custom-items.upload-image",
+	"updateCustomItemIndexes":        "custom-items.update-indexes",
+	"updateEvent":                    "events.update",
+	"updateEvents":                   "events.update-bulk",
+	"updateFolder":                   "folders.update",
+	"updateFolderSharedWith":         "folders.update-shared-with",
+	"updateGear":                     "gear.update",
+	"updateInterval":                 "activity.update-interval",
+	"updateIntervals":                "activity.update-intervals",
+	"updateLastSeenMessageId":        "chats.mark-seen",
+	"updatePlanWorkouts":             "folders.update-workouts",
+	"updateReminder":                 "gear.update-reminder",
+	"updateSettings":                 "sport-settings.update",
+	"updateSettingsMulti":            "sport-settings.update-multi",
+	"updateSharedEvent":              "shared-events.update",
+	"updateSharedEventImage":         "shared-events.upload-image",
+	"updateWeatherConfig":            "athlete.update-weather-config",
+	"updateWellness":                 "wellness.update",
+	"updateWellnessBulk":             "wellness.update-bulk",
+	"updateWellness_1":               "wellness.update-current",
+	"updateWorkout":                  "workouts.update",
+	"uploadActivity":                 "activities.upload",
+	"uploadActivityStreamsCSV":       "activity.upload-streams-csv",
+	"uploadWellness":                 "wellness.upload",
 }
 
 var schemaCmd = &cobra.Command{
@@ -45,7 +208,7 @@ var schemaCmd = &cobra.Command{
 		}
 
 		if len(args) == 0 {
-			return fmt.Errorf("provide an operation path (e.g., activities.list) or type name (e.g., Activity)\n  Use --list to see all operations")
+			return discoveryErr(fmt.Errorf("provide an operation path (e.g., activities.list) or type name (e.g., Activity)\n  Use --list to see all operations"))
 		}
 
 		path := args[0]
@@ -65,7 +228,7 @@ func init() {
 func parseSpec() (map[string]interface{}, error) {
 	var spec map[string]interface{}
 	if err := json.Unmarshal(specData, &spec); err != nil {
-		return nil, fmt.Errorf("parsing embedded OpenAPI spec: %w", err)
+		return nil, discoveryErr(fmt.Errorf("parsing embedded OpenAPI spec: %w", err))
 	}
 	return spec, nil
 }
@@ -73,408 +236,11 @@ func parseSpec() (map[string]interface{}, error) {
 func parseSchemaPath(path string) (string, string, error) {
 	parts := strings.SplitN(path, ".", 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("schema path must be 'resource.method' (e.g., activities.list), got %q", path)
+		return "", "", discoveryErr(fmt.Errorf("schema path must be 'resource.method' (e.g., activities.list), got %q", path))
 	}
 	return parts[0], parts[1], nil
 }
 
-func commandNameForOperation(httpMethod, apiPath, operationID string) string {
-	clean := strings.TrimPrefix(apiPath, "/api/v1/")
-
-	if strings.HasPrefix(clean, "activity/") {
-		return activityCommandName(httpMethod, clean, operationID)
-	}
-	if strings.HasPrefix(clean, "athlete/") {
-		return athleteCommandName(httpMethod, clean, operationID)
-	}
-	if strings.HasPrefix(clean, "chats/") {
-		return chatsCommandName(httpMethod, clean, operationID)
-	}
-	if strings.HasPrefix(clean, "shared-event") {
-		return sharedEventsCommandName(httpMethod, clean, operationID)
-	}
-	return miscCommandName(httpMethod, clean, operationID)
-}
-
-func activityCommandName(httpMethod, clean, operationID string) string {
-	parts := strings.Split(clean, "/")
-	if len(parts) <= 2 {
-		switch httpMethod {
-		case "get":
-			return "activity.get"
-		case "put":
-			return "activity.update"
-		case "delete":
-			return "activity.delete"
-		}
-	}
-	sub := parts[2]
-	sub = strings.TrimSuffix(sub, "{ext}")
-
-	if len(parts) > 3 {
-		switch {
-		case sub == "intervals" && httpMethod == "put" && strings.Contains(clean, "{intervalId}"):
-			return "activity.update-interval"
-		case sub == "delete-intervals":
-			return "activity.delete-intervals"
-		}
-	}
-
-	switch {
-	case sub == "streams.csv":
-		return "activity.upload-streams-csv"
-	case sub == "streams" && httpMethod == "put":
-		return "activity.update-streams"
-	case sub == "streams":
-		return "activity.streams"
-	case sub == "split-interval":
-		return "activity.split-interval"
-	case sub == "intervals" && httpMethod == "get":
-		return "activity.intervals"
-	case sub == "intervals" && httpMethod == "put":
-		return "activity.update-intervals"
-	case sub == "messages" && httpMethod == "get":
-		return "activity.messages"
-	case sub == "messages" && httpMethod == "post":
-		return "activity.send-message"
-	default:
-		return "activity." + sub
-	}
-}
-
-func athleteCommandName(httpMethod, clean, operationID string) string {
-	parts := strings.Split(clean, "/")
-	if len(parts) <= 2 {
-		switch httpMethod {
-		case "get":
-			return "athlete.get"
-		case "put":
-			return "athlete.update"
-		}
-	}
-	sub := parts[2]
-
-	switch {
-	case sub == "activities" || sub == "activities.csv" || strings.HasPrefix(sub, "activities-"):
-		return activitiesCommandName(httpMethod, clean, operationID)
-	case sub == "wellness" || sub == "wellness-bulk" || strings.HasSuffix(sub, "wellness"):
-		return wellnessCommandName(httpMethod, clean, operationID)
-	case sub == "events" || strings.HasPrefix(sub, "events"):
-		return eventsCommandName(httpMethod, clean, operationID)
-	case sub == "event-tags":
-		return "tags.event"
-	case sub == "workouts" || sub == "workouts.zip" || sub == "workout-tags" || sub == "duplicate-workouts":
-		return workoutsCommandName(httpMethod, clean, operationID)
-	case sub == "gear" || strings.HasSuffix(sub, "gear"):
-		return gearCommandName(httpMethod, clean, operationID)
-	case sub == "folders":
-		return foldersCommandName(httpMethod, clean, operationID)
-	case sub == "sport-settings" || sub == "settings":
-		return sportSettingsCommandName(httpMethod, clean, operationID)
-	case sub == "custom-item" || sub == "custom-item-indexes":
-		return customItemsCommandName(httpMethod, clean, operationID)
-	case sub == "chats":
-		return "athlete.chats"
-	case sub == "duplicate-events":
-		return "events.duplicate"
-	}
-
-	subClean := strings.TrimSuffix(sub, "{ext}")
-	switch {
-	case sub == "profile":
-		return "athlete.profile"
-	case sub == "training-plan" && httpMethod == "get":
-		return "athlete.training-plan"
-	case sub == "training-plan" && httpMethod == "put":
-		return "athlete.update-training-plan"
-	case sub == "weather-config" && httpMethod == "get":
-		return "athlete.weather-config"
-	case sub == "weather-config" && httpMethod == "put":
-		return "athlete.update-weather-config"
-	case sub == "weather-forecast":
-		return "athlete.weather-forecast"
-	case sub == "apply-plan-changes":
-		return "athlete.apply-plan-changes"
-	case sub == "routes":
-		return athleteRoutesCommandName(httpMethod, clean, operationID)
-	case sub == "download-fit-files":
-		return "athlete.download-fit-files"
-	case strings.HasPrefix(sub, "download-workout"):
-		return "athlete.download-workout"
-	case sub == "fitness-model-events":
-		return "athlete.fitness-model-events"
-	case sub == "activity-tags":
-		return "tags.activity"
-	default:
-		return "athlete." + subClean
-	}
-}
-
-func activitiesCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listActivities":
-		return "activities.list"
-	case "uploadActivity":
-		return "activities.upload"
-	case "createManualActivity":
-		return "activities.create-manual"
-	case "createMultipleManualActivities":
-		return "activities.create-manual-bulk"
-	case "searchForActivities":
-		return "activities.search"
-	case "searchForActivitiesFull":
-		return "activities.search-full"
-	case "searchForIntervals":
-		return "activities.interval-search"
-	case "downloadActivitiesAsCSV":
-		return "activities.download-csv"
-	case "listActivitiesAround":
-		return "activities.list-around"
-	case "getActivities":
-		return "activities.get-multiple"
-	default:
-		return "activities." + operationID
-	}
-}
-
-func wellnessCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "getRecord":
-		return "wellness.get"
-	case "updateWellness":
-		return "wellness.update"
-	case "updateWellness_1":
-		return "wellness.update-current"
-	case "updateWellnessBulk":
-		return "wellness.update-bulk"
-	case "uploadWellness":
-		return "wellness.upload"
-	case "listWellnessRecords":
-		return "wellness.list"
-	default:
-		return "wellness." + operationID
-	}
-}
-
-func eventsCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listEvents":
-		return "events.list"
-	case "createEvent":
-		return "events.create"
-	case "showEvent":
-		return "events.get"
-	case "updateEvent":
-		return "events.update"
-	case "deleteEvent":
-		return "events.delete"
-	case "updateEvents":
-		return "events.update-bulk"
-	case "deleteEvents":
-		return "events.delete-range"
-	case "deleteEventsBulk":
-		return "events.delete-bulk"
-	case "createMultipleEvents":
-		return "events.create-bulk"
-	case "markEventAsDone":
-		return "events.mark-done"
-	case "applyPlan":
-		return "events.apply-plan"
-	case "downloadWorkout_1":
-		return "events.download-workout"
-	case "listTags_1":
-		return "tags.event"
-	default:
-		return "events." + operationID
-	}
-}
-
-func workoutsCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listWorkouts":
-		return "workouts.list"
-	case "showWorkout":
-		return "workouts.get"
-	case "createWorkout":
-		return "workouts.create"
-	case "updateWorkout":
-		return "workouts.update"
-	case "deleteWorkout":
-		return "workouts.delete"
-	case "createMultipleWorkouts":
-		return "workouts.create-bulk"
-	case "duplicateWorkouts":
-		return "workouts.duplicate"
-	case "downloadWorkouts":
-		return "workouts.download"
-	case "listTags":
-		return "tags.workout"
-	default:
-		return "workouts." + operationID
-	}
-}
-
-func gearCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listGear":
-		return "gear.list"
-	case "createGear":
-		return "gear.create"
-	case "updateGear":
-		return "gear.update"
-	case "deleteGear":
-		return "gear.delete"
-	case "replaceGear":
-		return "gear.replace"
-	case "calcDistanceEtc":
-		return "gear.calc"
-	case "createReminder":
-		return "gear.create-reminder"
-	case "updateReminder":
-		return "gear.update-reminder"
-	case "deleteReminder":
-		return "gear.delete-reminder"
-	default:
-		return "gear." + operationID
-	}
-}
-
-func foldersCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listFolders":
-		return "folders.list"
-	case "createFolder":
-		return "folders.create"
-	case "updateFolder":
-		return "folders.update"
-	case "deleteFolder":
-		return "folders.delete"
-	case "updatePlanWorkouts":
-		return "folders.update-workouts"
-	case "listFolderSharedWith":
-		return "folders.shared-with"
-	case "updateFolderSharedWith":
-		return "folders.update-shared-with"
-	case "importWorkoutFile":
-		return "folders.import-workout"
-	default:
-		return "folders." + operationID
-	}
-}
-
-func sportSettingsCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listSettings":
-		return "sport-settings.list"
-	case "getSettings_1":
-		return "sport-settings.get"
-	case "getSettings":
-		return "sport-settings.get-device"
-	case "createSettings":
-		return "sport-settings.create"
-	case "updateSettings":
-		return "sport-settings.update"
-	case "updateSettingsMulti":
-		return "sport-settings.update-multi"
-	case "deleteSettings":
-		return "sport-settings.delete"
-	case "applyToActivities":
-		return "sport-settings.apply"
-	case "listPaceDistancesForSport":
-		return "sport-settings.pace-distances"
-	case "listMatchingActivities":
-		return "sport-settings.matching-activities"
-	default:
-		return "sport-settings." + operationID
-	}
-}
-
-func customItemsCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listCustomItems":
-		return "custom-items.list"
-	case "getCustomItem":
-		return "custom-items.get"
-	case "createCustomItem":
-		return "custom-items.create"
-	case "updateCustomItem":
-		return "custom-items.update"
-	case "deleteCustomItem":
-		return "custom-items.delete"
-	case "updateCustomItemImage":
-		return "custom-items.upload-image"
-	case "updateCustomItemIndexes":
-		return "custom-items.update-indexes"
-	default:
-		return "custom-items." + operationID
-	}
-}
-
-func athleteRoutesCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "listAthleteRoutes":
-		return "athlete.routes"
-	case "getAthleteRoute":
-		return "athlete.route-get"
-	case "updateAthleteRoute":
-		return "athlete.route-update"
-	case "checkMerge":
-		return "athlete.route-similarity"
-	default:
-		return "athlete." + operationID
-	}
-}
-
-func chatsCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "showChat":
-		return "chats.get"
-	case "listMessages":
-		return "chats.messages"
-	case "sendMessage":
-		return "chats.send"
-	case "deleteMessage":
-		return "chats.delete-message"
-	case "updateLastSeenMessageId":
-		return "chats.mark-seen"
-	default:
-		return "chats." + operationID
-	}
-}
-
-func sharedEventsCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "getSharedEvent":
-		return "shared-events.get-by-slug"
-	case "getSharedEvent_1":
-		return "shared-events.get"
-	case "createSharedEvent":
-		return "shared-events.create"
-	case "updateSharedEvent":
-		return "shared-events.update"
-	case "deleteSharedEvent":
-		return "shared-events.delete"
-	case "updateSharedEventImage":
-		return "shared-events.upload-image"
-	default:
-		return "shared-events." + operationID
-	}
-}
-
-func miscCommandName(httpMethod, clean, operationID string) string {
-	switch operationID {
-	case "updateAthletePlans":
-		return "misc.update-athlete-plans"
-	case "downloadWorkout":
-		return "misc.download-workout"
-	case "listPaceDistances":
-		return "misc.pace-distances"
-	case "disconnectApp":
-		return "misc.disconnect-app"
-	default:
-		return "misc." + operationID
-	}
-}
 
 func buildOperationIndex(spec map[string]interface{}) map[string]operationEntry {
 	index := make(map[string]operationEntry)
@@ -496,7 +262,10 @@ func buildOperationIndex(spec map[string]interface{}) map[string]operationEntry 
 				continue
 			}
 			operationID, _ := op["operationId"].(string)
-			cmdName := commandNameForOperation(method, apiPath, operationID)
+			cmdName, ok := operationIDToCommand[operationID]
+			if !ok {
+				continue
+			}
 			index[cmdName] = operationEntry{
 				CommandName: cmdName,
 				OperationID: operationID,
@@ -608,7 +377,7 @@ func showOperation(spec map[string]interface{}, path string, resolveRefs bool) e
 		if len(suggestions) > 0 {
 			msg += fmt.Sprintf("\n  Available %s operations: %s", resource, strings.Join(suggestions, ", "))
 		}
-		return fmt.Errorf("%s", msg)
+		return discoveryErr(fmt.Errorf("%s", msg))
 	}
 	output := buildSchemaOutput(spec, entry)
 	if resolveRefs {
@@ -629,11 +398,11 @@ func showOperation(spec map[string]interface{}, path string, resolveRefs bool) e
 func showType(spec map[string]interface{}, name string, resolveRefs bool) error {
 	components, ok := spec["components"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("no components in spec")
+		return discoveryErr(fmt.Errorf("no components in spec"))
 	}
 	schemas, ok := components["schemas"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("no schemas in spec")
+		return discoveryErr(fmt.Errorf("no schemas in spec"))
 	}
 	schema, ok := schemas[name]
 	if !ok {
@@ -642,11 +411,11 @@ func showType(spec map[string]interface{}, name string, resolveRefs bool) error 
 			available = append(available, k)
 		}
 		sort.Strings(available)
-		return fmt.Errorf("type %q not found\n  Available types: %s", name, strings.Join(available, ", "))
+		return discoveryErr(fmt.Errorf("type %q not found\n  Available types: %s", name, strings.Join(available, ", ")))
 	}
 	output, ok := schema.(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("invalid schema for type %q", name)
+		return discoveryErr(fmt.Errorf("invalid schema for type %q", name))
 	}
 	if resolveRefs {
 		resolveAllRefs(output, schemas, map[string]bool{name: true})

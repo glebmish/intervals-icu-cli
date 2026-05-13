@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/glebmish/intervals-icu-cli/internal/validate"
 	"github.com/spf13/cobra"
 )
@@ -47,9 +45,9 @@ func newSportSettingsGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get a sport setting",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingID, _ := cmd.Flags().GetString("setting-id")
-			if settingID == "" {
-				return fmt.Errorf("--setting-id is required")
+			settingID, err := requireString(cmd, "setting-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("setting-id", settingID); err != nil {
 				return err
@@ -68,9 +66,9 @@ func newSportSettingsGetDeviceCmd() *cobra.Command {
 		Use:   "get-device",
 		Short: "Get device settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deviceClass, _ := cmd.Flags().GetString("device-class")
-			if deviceClass == "" {
-				return fmt.Errorf("--device-class is required")
+			deviceClass, err := requireString(cmd, "device-class")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("device-class", deviceClass); err != nil {
 				return err
@@ -89,14 +87,13 @@ func newSportSettingsCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create sport settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with sport settings payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/sport-settings", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Sport settings JSON payload (required)")
 	return cmd
 }
 
@@ -106,13 +103,13 @@ func newSportSettingsUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update sport settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingID, _ := cmd.Flags().GetString("setting-id")
-			if settingID == "" {
-				return fmt.Errorf("--setting-id is required")
+			settingID, err := requireString(cmd, "setting-id")
+			if err != nil {
+				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with sport settings payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"id": settingID}
 			if v, _ := cmd.Flags().GetBool("recalc-hr-zones"); v {
@@ -122,7 +119,6 @@ func newSportSettingsUpdateCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("setting-id", "", "Sport setting ID (required)")
-	cmd.Flags().String("json", "", "Sport settings JSON payload (required)")
 	cmd.Flags().Bool("recalc-hr-zones", false, "Recalculate HR zones")
 	return cmd
 }
@@ -133,9 +129,9 @@ func newSportSettingsUpdateMultiCmd() *cobra.Command {
 		Use:   "update-multi",
 		Short: "Update multiple sport settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with sport settings payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if v, _ := cmd.Flags().GetBool("recalc-hr-zones"); v {
@@ -144,7 +140,6 @@ func newSportSettingsUpdateMultiCmd() *cobra.Command {
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/sport-settings", params, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Sport settings JSON payload (required)")
 	cmd.Flags().Bool("recalc-hr-zones", false, "Recalculate HR zones")
 	return cmd
 }
@@ -155,9 +150,9 @@ func newSportSettingsDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete sport settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingID, _ := cmd.Flags().GetString("setting-id")
-			if settingID == "" {
-				return fmt.Errorf("--setting-id is required")
+			settingID, err := requireString(cmd, "setting-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"id": settingID}
 			return doDelete(cmd, "/api/v1/athlete/{athleteId}/sport-settings/{id}", params, "sport-settings", settingID)
@@ -173,9 +168,9 @@ func newSportSettingsApplyCmd() *cobra.Command {
 		Use:   "apply",
 		Short: "Apply sport settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingID, _ := cmd.Flags().GetString("setting-id")
-			if settingID == "" {
-				return fmt.Errorf("--setting-id is required")
+			settingID, err := requireString(cmd, "setting-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"id": settingID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{athleteId}/sport-settings/{id}/apply", params, "")
@@ -191,9 +186,9 @@ func newSportSettingsPaceDistancesCmd() *cobra.Command {
 		Use:   "pace-distances",
 		Short: "Get pace distances for sport settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingID, _ := cmd.Flags().GetString("setting-id")
-			if settingID == "" {
-				return fmt.Errorf("--setting-id is required")
+			settingID, err := requireString(cmd, "setting-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"id": settingID}
 			return doGet(cmd, "/api/v1/athlete/{athleteId}/sport-settings/{id}/pace_distances", params)
@@ -209,9 +204,9 @@ func newSportSettingsMatchingActivitiesCmd() *cobra.Command {
 		Use:   "matching-activities",
 		Short: "Get activities matching sport settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingID, _ := cmd.Flags().GetString("setting-id")
-			if settingID == "" {
-				return fmt.Errorf("--setting-id is required")
+			settingID, err := requireString(cmd, "setting-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"id": settingID}
 			return doGet(cmd, "/api/v1/athlete/{athleteId}/sport-settings/{id}/matching-activities", params)

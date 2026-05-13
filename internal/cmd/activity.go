@@ -53,9 +53,9 @@ func init() {
 }
 
 func requireActivityID(cmd *cobra.Command) (string, error) {
-	id, _ := cmd.Flags().GetString("activity-id")
-	if id == "" {
-		return "", fmt.Errorf("--activity-id is required")
+	id, err := requireString(cmd, "activity-id")
+	if err != nil {
+		return "", err
 	}
 	if err := validate.PathParam("activity-id", id); err != nil {
 		return "", err
@@ -95,16 +95,15 @@ func newActivityUpdateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Activity payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id}
 			return doMutate(cmd, "PUT", "/api/v1/activity/{activityId}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("activity-id", "", "Activity ID (required)")
-	cmd.Flags().String("json", "", "Activity JSON payload (required)")
 	return cmd
 }
 
@@ -154,9 +153,9 @@ func newActivityUpdateIntervalsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with intervals payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id}
 			if v, _ := cmd.Flags().GetBool("all"); v {
@@ -166,7 +165,6 @@ func newActivityUpdateIntervalsCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("activity-id", "", "Activity ID (required)")
-	cmd.Flags().String("json", "", "Intervals JSON payload (required)")
 	cmd.Flags().Bool("all", false, "Update all intervals")
 	return cmd
 }
@@ -181,16 +179,16 @@ func newActivityUpdateIntervalCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			intervalID, _ := cmd.Flags().GetString("interval-id")
-			if intervalID == "" {
-				return fmt.Errorf("--interval-id is required")
+			intervalID, err := requireString(cmd, "interval-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("interval-id", intervalID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with interval payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id, "intervalId": intervalID}
 			return doMutate(cmd, "PUT", "/api/v1/activity/{activityId}/intervals/{intervalId}", params, jsonBody)
@@ -198,7 +196,6 @@ func newActivityUpdateIntervalCmd() *cobra.Command {
 	}
 	cmd.Flags().String("activity-id", "", "Activity ID (required)")
 	cmd.Flags().String("interval-id", "", "Interval ID (required)")
-	cmd.Flags().String("json", "", "Interval JSON payload (required)")
 	return cmd
 }
 
@@ -212,16 +209,15 @@ func newActivityDeleteIntervalsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with interval IDs payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id}
 			return doMutate(cmd, "PUT", "/api/v1/activity/{activityId}/delete-intervals", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("activity-id", "", "Activity ID (required)")
-	cmd.Flags().String("json", "", "JSON payload with interval IDs to delete (required)")
 	return cmd
 }
 
@@ -237,7 +233,7 @@ func newActivitySplitIntervalCmd() *cobra.Command {
 			}
 			splitAt, _ := cmd.Flags().GetInt("split-at")
 			if splitAt == 0 {
-				return fmt.Errorf("--split-at is required")
+				return validationErr(fmt.Errorf("--split-at is required"))
 			}
 			params := map[string]string{
 				"activityId": id,
@@ -285,16 +281,15 @@ func newActivityUpdateStreamsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with streams payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id}
 			return doMutate(cmd, "PUT", "/api/v1/activity/{activityId}/streams", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("activity-id", "", "Activity ID (required)")
-	cmd.Flags().String("json", "", "Streams JSON payload (required)")
 	return cmd
 }
 
@@ -308,16 +303,15 @@ func newActivityUploadStreamsCSVCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with CSV streams payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id}
 			return doMutate(cmd, "PUT", "/api/v1/activity/{activityId}/streams.csv", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("activity-id", "", "Activity ID (required)")
-	cmd.Flags().String("json", "", "CSV streams payload (required)")
 	return cmd
 }
 
@@ -673,9 +667,9 @@ func newActivityBestEffortsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			stream, _ := cmd.Flags().GetString("stream")
-			if stream == "" {
-				return fmt.Errorf("--stream is required")
+			stream, err := requireString(cmd, "stream")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id, "stream": stream}
 			if v, _ := cmd.Flags().GetInt("duration"); v > 0 {
@@ -730,16 +724,15 @@ func newActivitySendMessageCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with message payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"activityId": id}
 			return doMutate(cmd, "POST", "/api/v1/activity/{activityId}/messages", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("activity-id", "", "Activity ID (required)")
-	cmd.Flags().String("json", "", "Message JSON payload (required)")
 	return cmd
 }
 

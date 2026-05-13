@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 )
 
@@ -28,12 +29,18 @@ func FormatFromFlag(formatFlag, fieldsFlag string) Options {
 	return opts
 }
 
-// Write parses data as JSON, applies field filtering, and writes formatted output to w.
+// Write parses data as JSON, sanitizes, applies field filtering, and writes
+// formatted output to w. Non-JSON bodies (plain strings, raw integers, etc.)
+// pass through unchanged so callers don't have to handle that case.
 func Write(w io.Writer, data []byte, opts Options) error {
 	var v interface{}
 	if err := json.Unmarshal(data, &v); err != nil {
-		return fmt.Errorf("parse JSON: %w", err)
+		// Non-JSON bodies pass through.
+		_, err := w.Write(append(data, '\n'))
+		return err
 	}
+
+	v = sanitize(v)
 
 	if len(opts.Fields) > 0 {
 		v = filterFields(v, opts.Fields)
@@ -42,11 +49,66 @@ func Write(w io.Writer, data []byte, opts Options) error {
 	switch opts.Format {
 	case "ndjson":
 		return writeNDJSON(w, v)
-	case "json", "text", "":
-		return writePrettyJSON(w, v)
 	default:
 		return writePrettyJSON(w, v)
 	}
+}
+
+// injectionTagPattern matches XML-ish tag wrappers used in some prompt-injection
+// attempts, e.g. <system>...</system>, <assistant>...</assistant>. We strip the
+// wrapper and keep the inner text — opening/closing tags only, case-insensitive.
+var injectionTagPattern = regexp.MustCompile(`(?i)</?(system|assistant|tool_use|tool_result)[^>]*>`)
+
+// sanitize walks parsed JSON and cleans string values to defend against
+// prompt injection embedded in API responses. Strips control characters and
+// known injection tag wrappers. Defensive minimum per design-cli §13.
+func sanitize(v interface{}) interface{} {
+	switch val := v.(type) {
+	case string:
+		return sanitizeString(val)
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(val))
+		for k, child := range val {
+			out[k] = sanitize(child)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(val))
+		for i, child := range val {
+			out[i] = sanitize(child)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
+func sanitizeString(s string) string {
+	if s == "" {
+		return s
+	}
+	s = injectionTagPattern.ReplaceAllString(s, "")
+	if !needsControlStrip(s) {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if r < 0x20 && r != '\t' && r != '\n' && r != '\r' {
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+func needsControlStrip(s string) bool {
+	for _, r := range s {
+		if r < 0x20 && r != '\t' && r != '\n' && r != '\r' {
+			return true
+		}
+	}
+	return false
 }
 
 // WriteRaw passes bytes through to w unchanged.
@@ -71,7 +133,6 @@ func writePrettyJSON(w io.Writer, v interface{}) error {
 func writeNDJSON(w io.Writer, v interface{}) error {
 	arr, ok := v.([]interface{})
 	if !ok {
-		// single object — write one line
 		return writeJSONLine(w, v)
 	}
 	for _, elem := range arr {
@@ -94,33 +155,56 @@ func writeJSONLine(w io.Writer, v interface{}) error {
 	return err
 }
 
-// filterFields recursively removes keys not in the fields list.
-// Works on maps and slices.
+// filterFields keeps only the requested paths. Dotted paths descend through
+// objects and arrays: "rows.id" keeps {"rows":[{"id":1}]} → {"rows":[{"id":1}]}.
 func filterFields(v interface{}, fields []string) interface{} {
-	allowed := make(map[string]struct{}, len(fields))
+	type node struct {
+		leaf     bool
+		children map[string]*node
+	}
+	root := &node{children: map[string]*node{}}
 	for _, f := range fields {
-		allowed[f] = struct{}{}
-	}
-	return filterValue(v, allowed)
-}
-
-func filterValue(v interface{}, allowed map[string]struct{}) interface{} {
-	switch val := v.(type) {
-	case map[string]interface{}:
-		result := make(map[string]interface{})
-		for k, child := range val {
-			if _, ok := allowed[k]; ok {
-				result[k] = child
+		segs := strings.Split(f, ".")
+		cur := root
+		for _, s := range segs {
+			child, ok := cur.children[s]
+			if !ok {
+				child = &node{children: map[string]*node{}}
+				cur.children[s] = child
 			}
+			cur = child
 		}
-		return result
-	case []interface{}:
-		result := make([]interface{}, len(val))
-		for i, elem := range val {
-			result[i] = filterValue(elem, allowed)
-		}
-		return result
-	default:
-		return v
+		cur.leaf = true
 	}
+	var walk func(v interface{}, n *node) interface{}
+	walk = func(v interface{}, n *node) interface{} {
+		if n == nil {
+			return v
+		}
+		switch val := v.(type) {
+		case map[string]interface{}:
+			result := make(map[string]interface{})
+			for k, child := range val {
+				cn, ok := n.children[k]
+				if !ok {
+					continue
+				}
+				if cn.leaf && len(cn.children) == 0 {
+					result[k] = child
+				} else {
+					result[k] = walk(child, cn)
+				}
+			}
+			return result
+		case []interface{}:
+			out := make([]interface{}, len(val))
+			for i, elem := range val {
+				out[i] = walk(elem, n)
+			}
+			return out
+		default:
+			return v
+		}
+	}
+	return walk(v, root)
 }

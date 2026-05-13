@@ -1,4 +1,3 @@
-// internal/cmd/activities.go
 package cmd
 
 import (
@@ -33,133 +32,14 @@ func init() {
 	rootCmd.AddCommand(activitiesCmd)
 }
 
-// Helper to get format options from command flags.
-func fmtOpts(cmd *cobra.Command) format.Options {
-	f, _ := cmd.Flags().GetString("format")
-	fields, _ := cmd.Flags().GetString("fields")
-	return format.FormatFromFlag(f, fields)
-}
-
-// Helper to handle the common GET pattern.
-func doGet(cmd *cobra.Command, path string, params map[string]string) error {
-	c := api.FromContext(cmd.Context())
-
-	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	if dryRun {
-		fmt.Print(c.DryRun("GET", path, params, nil))
-		return nil
-	}
-
-	resp, err := c.Do("GET", path, params, nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-	return format.Write(os.Stdout, body, fmtOpts(cmd))
-}
-
-// Helper to handle the common POST/PUT pattern.
-func doMutate(cmd *cobra.Command, method, path string, params map[string]string, jsonFlag string) error {
-	c := api.FromContext(cmd.Context())
-
-	var body []byte
-	if jsonFlag != "" {
-		if err := validate.JSONBody(jsonFlag); err != nil {
-			return err
-		}
-		body = []byte(jsonFlag)
-	}
-
-	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	if dryRun {
-		fmt.Print(c.DryRun(method, path, params, body))
-		return nil
-	}
-
-	resp, err := c.Do(method, path, params, body)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-	return format.Write(os.Stdout, respBody, fmtOpts(cmd))
-}
-
-// Helper to handle DELETE with confirmation.
-func doDelete(cmd *cobra.Command, path string, params map[string]string, resource, id string) error {
-	if err := confirmDelete(cmd, resource, id); err != nil {
-		return err
-	}
-
-	c := api.FromContext(cmd.Context())
-
-	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	if dryRun {
-		fmt.Print(c.DryRun("DELETE", path, params, nil))
-		return nil
-	}
-
-	resp, err := c.Do("DELETE", path, params, nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-	if len(body) > 0 {
-		return format.Write(os.Stdout, body, fmtOpts(cmd))
-	}
-	return nil
-}
-
-// Helper to handle binary file downloads.
-func doDownload(cmd *cobra.Command, path string, params map[string]string, outputPath string) error {
-	c := api.FromContext(cmd.Context())
-
-	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	if dryRun {
-		fmt.Print(c.DryRun("GET", path, params, nil))
-		return nil
-	}
-
-	resp, err := c.Do("GET", path, params, nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-
-	if outputPath != "" {
-		if err := os.WriteFile(outputPath, body, 0644); err != nil {
-			return fmt.Errorf("writing file: %w", err)
-		}
-		fmt.Fprintf(os.Stderr, "Downloaded to %s\n", outputPath)
-		return nil
-	}
-
-	return format.WriteRaw(os.Stdout, body)
-}
-
 func newActivitiesListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List athlete activities",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			oldest, _ := cmd.Flags().GetString("oldest")
-			if oldest == "" {
-				return fmt.Errorf("--oldest is required (YYYY-MM-DD)")
+			oldest, err := requireString(cmd, "oldest")
+			if err != nil {
+				return err
 			}
 			if err := validate.DateParam("oldest", oldest); err != nil {
 				return err
@@ -188,9 +68,9 @@ func newActivitiesSearchCmd() *cobra.Command {
 		Use:   "search",
 		Short: "Search activities by text",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			q, _ := cmd.Flags().GetString("query")
-			if q == "" {
-				return fmt.Errorf("--query is required")
+			q, err := requireString(cmd, "query")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"q": q}
 			if v, _ := cmd.Flags().GetInt("limit"); v > 0 {
@@ -209,9 +89,9 @@ func newActivitiesSearchFullCmd() *cobra.Command {
 		Use:   "search-full",
 		Short: "Search activities with full details",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			q, _ := cmd.Flags().GetString("query")
-			if q == "" {
-				return fmt.Errorf("--query is required")
+			q, err := requireString(cmd, "query")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"q": q}
 			if v, _ := cmd.Flags().GetInt("limit"); v > 0 {
@@ -234,7 +114,7 @@ func newActivitiesIntervalSearchCmd() *cobra.Command {
 			for _, flag := range []string{"min-secs", "max-secs", "min-intensity", "max-intensity"} {
 				v, _ := cmd.Flags().GetInt(flag)
 				if v == 0 {
-					return fmt.Errorf("--%s is required", flag)
+					return validationErr(fmt.Errorf("--%s is required", flag))
 				}
 				apiParam := map[string]string{
 					"min-secs":      "minSecs",
@@ -267,14 +147,13 @@ func newActivitiesCreateManualCmd() *cobra.Command {
 		Use:   "create-manual",
 		Short: "Create a manual activity",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Activity payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/activities/manual", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Activity JSON payload")
 	return cmd
 }
 
@@ -283,14 +162,13 @@ func newActivitiesCreateManualBulkCmd() *cobra.Command {
 		Use:   "create-manual-bulk",
 		Short: "Create multiple manual activities",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with array of Activity payloads")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/activities/manual/bulk", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "JSON array of Activity payloads")
 	return cmd
 }
 
@@ -299,9 +177,9 @@ func newActivitiesUploadCmd() *cobra.Command {
 		Use:   "upload",
 		Short: "Upload an activity file (FIT, TCX, GPX)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			file, _ := cmd.Flags().GetString("file")
-			if file == "" {
-				return fmt.Errorf("--file is required")
+			file, err := requireString(cmd, "file")
+			if err != nil {
+				return err
 			}
 
 			data, err := os.ReadFile(file)
@@ -357,9 +235,9 @@ func newActivitiesListAroundCmd() *cobra.Command {
 		Use:   "list-around",
 		Short: "List activities around a specific activity",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			activityID, _ := cmd.Flags().GetString("activity-id")
-			if activityID == "" {
-				return fmt.Errorf("--activity-id is required")
+			activityID, err := requireString(cmd, "activity-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("activity-id", activityID); err != nil {
 				return err
@@ -381,9 +259,9 @@ func newActivitiesGetMultipleCmd() *cobra.Command {
 		Use:   "get-multiple",
 		Short: "Get multiple activities by IDs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ids, _ := cmd.Flags().GetString("ids")
-			if ids == "" {
-				return fmt.Errorf("--ids is required (comma-separated)")
+			ids, err := requireString(cmd, "ids")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"ids": ids}
 			if v, _ := cmd.Flags().GetBool("intervals"); v {

@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/glebmish/intervals-icu-cli/internal/validate"
 	"github.com/spf13/cobra"
 )
@@ -44,9 +42,9 @@ func newWorkoutsGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get a single workout by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			workoutID, _ := cmd.Flags().GetString("workout-id")
-			if workoutID == "" {
-				return fmt.Errorf("--workout-id is required")
+			workoutID, err := requireString(cmd, "workout-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("workout-id", workoutID); err != nil {
 				return err
@@ -64,14 +62,13 @@ func newWorkoutsCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create a new workout",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Workout payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/workouts", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Workout JSON payload (required)")
 	return cmd
 }
 
@@ -80,23 +77,22 @@ func newWorkoutsUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update a workout",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			workoutID, _ := cmd.Flags().GetString("workout-id")
-			if workoutID == "" {
-				return fmt.Errorf("--workout-id is required")
+			workoutID, err := requireString(cmd, "workout-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("workout-id", workoutID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with Workout payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"workoutId": workoutID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/workouts/{workoutId}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("workout-id", "", "Workout ID (required)")
-	cmd.Flags().String("json", "", "Workout JSON payload (required)")
 	return cmd
 }
 
@@ -105,9 +101,9 @@ func newWorkoutsDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a workout",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			workoutID, _ := cmd.Flags().GetString("workout-id")
-			if workoutID == "" {
-				return fmt.Errorf("--workout-id is required")
+			workoutID, err := requireString(cmd, "workout-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("workout-id", workoutID); err != nil {
 				return err
@@ -129,14 +125,13 @@ func newWorkoutsCreateBulkCmd() *cobra.Command {
 		Use:   "create-bulk",
 		Short: "Bulk create workouts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with array of Workout payloads")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/workouts/bulk", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "JSON array of Workout payloads (required)")
 	return cmd
 }
 
@@ -145,14 +140,13 @@ func newWorkoutsDuplicateCmd() *cobra.Command {
 		Use:   "duplicate",
 		Short: "Duplicate workouts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with duplicate payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/duplicate-workouts", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Duplicate JSON payload (required)")
 	return cmd
 }
 

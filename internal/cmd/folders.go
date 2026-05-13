@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/glebmish/intervals-icu-cli/internal/validate"
 	"github.com/spf13/cobra"
 )
@@ -45,14 +43,13 @@ func newFoldersCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create a workout folder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with folder payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/folders", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Folder JSON payload (required)")
 	return cmd
 }
 
@@ -62,23 +59,22 @@ func newFoldersUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update a workout folder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			folderID, _ := cmd.Flags().GetString("folder-id")
-			if folderID == "" {
-				return fmt.Errorf("--folder-id is required")
+			folderID, err := requireString(cmd, "folder-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("folder-id", folderID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with folder payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"folderId": folderID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/folders/{folderId}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("folder-id", "", "Folder ID (required)")
-	cmd.Flags().String("json", "", "Folder JSON payload (required)")
 	return cmd
 }
 
@@ -88,9 +84,9 @@ func newFoldersDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a workout folder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			folderID, _ := cmd.Flags().GetString("folder-id")
-			if folderID == "" {
-				return fmt.Errorf("--folder-id is required")
+			folderID, err := requireString(cmd, "folder-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"folderId": folderID}
 			return doDelete(cmd, "/api/v1/athlete/{id}/folders/{folderId}", params, "folder", folderID)
@@ -106,13 +102,13 @@ func newFoldersUpdateWorkoutsCmd() *cobra.Command {
 		Use:   "update-workouts",
 		Short: "Update workouts in a folder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			folderID, _ := cmd.Flags().GetString("folder-id")
-			if folderID == "" {
-				return fmt.Errorf("--folder-id is required")
+			folderID, err := requireString(cmd, "folder-id")
+			if err != nil {
+				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with workouts payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"folderId": folderID}
 			if v, _ := cmd.Flags().GetString("oldest"); v != "" {
@@ -125,7 +121,6 @@ func newFoldersUpdateWorkoutsCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("folder-id", "", "Folder ID (required)")
-	cmd.Flags().String("json", "", "Workouts JSON payload (required)")
 	cmd.Flags().String("oldest", "", "Start date filter")
 	cmd.Flags().String("newest", "", "End date filter")
 	return cmd
@@ -137,9 +132,9 @@ func newFoldersSharedWithCmd() *cobra.Command {
 		Use:   "shared-with",
 		Short: "Get folder sharing settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			folderID, _ := cmd.Flags().GetString("folder-id")
-			if folderID == "" {
-				return fmt.Errorf("--folder-id is required")
+			folderID, err := requireString(cmd, "folder-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"folderId": folderID}
 			return doGet(cmd, "/api/v1/athlete/{id}/folders/{folderId}/shared-with", params)
@@ -155,20 +150,19 @@ func newFoldersUpdateSharedWithCmd() *cobra.Command {
 		Use:   "update-shared-with",
 		Short: "Update folder sharing settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			folderID, _ := cmd.Flags().GetString("folder-id")
-			if folderID == "" {
-				return fmt.Errorf("--folder-id is required")
+			folderID, err := requireString(cmd, "folder-id")
+			if err != nil {
+				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with sharing payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"folderId": folderID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/folders/{folderId}/shared-with", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("folder-id", "", "Folder ID (required)")
-	cmd.Flags().String("json", "", "Sharing JSON payload (required)")
 	return cmd
 }
 
@@ -178,13 +172,13 @@ func newFoldersImportWorkoutCmd() *cobra.Command {
 		Use:   "import-workout",
 		Short: "Import a workout into a folder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			folderID, _ := cmd.Flags().GetString("folder-id")
-			if folderID == "" {
-				return fmt.Errorf("--folder-id is required")
+			folderID, err := requireString(cmd, "folder-id")
+			if err != nil {
+				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with workout payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"folderId": folderID}
 			if v, _ := cmd.Flags().GetString("type"); v != "" {
@@ -194,7 +188,6 @@ func newFoldersImportWorkoutCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("folder-id", "", "Folder ID (required)")
-	cmd.Flags().String("json", "", "Workout JSON payload (required)")
 	cmd.Flags().String("type", "", "Workout type")
 	return cmd
 }

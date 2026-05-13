@@ -49,14 +49,13 @@ func newGearCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create gear item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with gear payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/gear", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Gear JSON payload (required)")
 	return cmd
 }
 
@@ -66,23 +65,22 @@ func newGearUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update gear item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gearID, _ := cmd.Flags().GetString("gear-id")
-			if gearID == "" {
-				return fmt.Errorf("--gear-id is required")
+			gearID, err := requireString(cmd, "gear-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("gear-id", gearID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with gear payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"gearId": gearID}
 			return doMutate(cmd, "PUT", "/api/v1/athlete/{id}/gear/{gearId}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("gear-id", "", "Gear ID (required)")
-	cmd.Flags().String("json", "", "Gear JSON payload (required)")
 	return cmd
 }
 
@@ -92,9 +90,9 @@ func newGearDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete gear item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gearID, _ := cmd.Flags().GetString("gear-id")
-			if gearID == "" {
-				return fmt.Errorf("--gear-id is required")
+			gearID, err := requireString(cmd, "gear-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"gearId": gearID}
 			return doDelete(cmd, "/api/v1/athlete/{id}/gear/{gearId}", params, "gear", gearID)
@@ -110,20 +108,19 @@ func newGearReplaceCmd() *cobra.Command {
 		Use:   "replace",
 		Short: "Replace gear item",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gearID, _ := cmd.Flags().GetString("gear-id")
-			if gearID == "" {
-				return fmt.Errorf("--gear-id is required")
+			gearID, err := requireString(cmd, "gear-id")
+			if err != nil {
+				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with replacement payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"gearId": gearID}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/gear/{gearId}/replace", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("gear-id", "", "Gear ID (required)")
-	cmd.Flags().String("json", "", "Replacement gear JSON payload (required)")
 	return cmd
 }
 
@@ -133,9 +130,9 @@ func newGearCalcCmd() *cobra.Command {
 		Use:   "calc",
 		Short: "Calculate gear statistics",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gearID, _ := cmd.Flags().GetString("gear-id")
-			if gearID == "" {
-				return fmt.Errorf("--gear-id is required")
+			gearID, err := requireString(cmd, "gear-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"gearId": gearID}
 			return doGet(cmd, "/api/v1/athlete/{id}/gear/{gearId}/calc", params)
@@ -151,20 +148,19 @@ func newGearCreateReminderCmd() *cobra.Command {
 		Use:   "create-reminder",
 		Short: "Create gear reminder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gearID, _ := cmd.Flags().GetString("gear-id")
-			if gearID == "" {
-				return fmt.Errorf("--gear-id is required")
+			gearID, err := requireString(cmd, "gear-id")
+			if err != nil {
+				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with reminder payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"gearId": gearID}
 			return doMutate(cmd, "POST", "/api/v1/athlete/{id}/gear/{gearId}/reminder", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("gear-id", "", "Gear ID (required)")
-	cmd.Flags().String("json", "", "Reminder JSON payload (required)")
 	return cmd
 }
 
@@ -174,17 +170,17 @@ func newGearUpdateReminderCmd() *cobra.Command {
 		Use:   "update-reminder",
 		Short: "Update gear reminder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gearID, _ := cmd.Flags().GetString("gear-id")
-			if gearID == "" {
-				return fmt.Errorf("--gear-id is required")
+			gearID, err := requireString(cmd, "gear-id")
+			if err != nil {
+				return err
 			}
-			reminderID, _ := cmd.Flags().GetString("reminder-id")
-			if reminderID == "" {
-				return fmt.Errorf("--reminder-id is required")
+			reminderID, err := requireString(cmd, "reminder-id")
+			if err != nil {
+				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with reminder payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"gearId": gearID, "reminderId": reminderID}
 			if v, _ := cmd.Flags().GetBool("reset"); v {
@@ -198,7 +194,6 @@ func newGearUpdateReminderCmd() *cobra.Command {
 	}
 	cmd.Flags().String("gear-id", "", "Gear ID (required)")
 	cmd.Flags().String("reminder-id", "", "Reminder ID (required)")
-	cmd.Flags().String("json", "", "Reminder JSON payload (required)")
 	cmd.Flags().Bool("reset", false, "Reset reminder counter")
 	cmd.Flags().Int("snooze-days", 0, "Snooze reminder by N days")
 	return cmd
@@ -210,13 +205,13 @@ func newGearDeleteReminderCmd() *cobra.Command {
 		Use:   "delete-reminder",
 		Short: "Delete gear reminder",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gearID, _ := cmd.Flags().GetString("gear-id")
-			if gearID == "" {
-				return fmt.Errorf("--gear-id is required")
+			gearID, err := requireString(cmd, "gear-id")
+			if err != nil {
+				return err
 			}
-			reminderID, _ := cmd.Flags().GetString("reminder-id")
-			if reminderID == "" {
-				return fmt.Errorf("--reminder-id is required")
+			reminderID, err := requireString(cmd, "reminder-id")
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"gearId": gearID, "reminderId": reminderID}
 			return doDelete(cmd, "/api/v1/athlete/{id}/gear/{gearId}/reminder/{reminderId}", params, "gear reminder", reminderID)

@@ -22,6 +22,12 @@ type APIError struct {
 	Path       string
 }
 
+// IsAuth reports whether this error was returned for an auth-related status code.
+// main.go uses it to map APIError → exit code 2 (auth) vs 1 (generic API).
+func (e *APIError) IsAuth() bool {
+	return e.StatusCode == 401 || e.StatusCode == 403
+}
+
 func (e *APIError) Error() string {
 	statusText := http.StatusText(e.StatusCode)
 	msg := fmt.Sprintf("API error %d %s: %s %s", e.StatusCode, statusText, e.Method, e.Path)

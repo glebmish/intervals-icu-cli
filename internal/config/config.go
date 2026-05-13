@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/glebmish/intervals-icu-cli/internal/cliexit"
 	"gopkg.in/yaml.v3"
 )
 
@@ -63,10 +64,14 @@ func (c *Config) ApplyFlags(apiKey, athleteID, baseURL string) {
 
 func (c *Config) Validate() error {
 	if c.APIKey == "" {
-		return fmt.Errorf("api_key not configured\n  Set it in %s or INTERVALS_API_KEY env var\n  Run: intervals config init", DefaultPath())
+		return &cliexit.AuthError{Err: fmt.Errorf(
+			"api_key not configured\n  Set it in %s or INTERVALS_API_KEY env var\n  Run: intervals config init\n  Get an API key at https://intervals.icu/settings",
+			DefaultPath())}
 	}
 	if c.AthleteID == "" {
-		return fmt.Errorf("athlete_id not configured\n  Set it in %s or INTERVALS_ATHLETE_ID env var\n  Run: intervals config init", DefaultPath())
+		return &cliexit.AuthError{Err: fmt.Errorf(
+			"athlete_id not configured\n  Set it in %s or INTERVALS_ATHLETE_ID env var\n  Run: intervals config init",
+			DefaultPath())}
 	}
 	return nil
 }

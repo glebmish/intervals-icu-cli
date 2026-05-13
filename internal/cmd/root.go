@@ -1,4 +1,3 @@
-// internal/cmd/root.go
 package cmd
 
 import (
@@ -11,13 +10,22 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "intervals",
-	Short: "CLI for the intervals.icu API",
-	Long:  "intervals is a command-line interface for the intervals.icu training analytics platform.\nDesigned for AI agents and human operators. 100% API coverage.",
+	Use:          "intervals",
+	Short:        "CLI for the intervals.icu API",
+	Long:         "intervals is a command-line interface for the intervals.icu training analytics platform.\nDesigned for AI agents and human operators. 100% API coverage.",
+	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Skip config loading for commands that don't need it
-		if cmd.Name() == "init" || cmd.Name() == "schema" {
+		// Offline commands skip config loading.
+		switch cmd.Name() {
+		case "schema", "install-skills", "config", "help", "init":
 			return nil
+		}
+		// Walk up to find an offline-group ancestor (e.g. `config init`).
+		for p := cmd.Parent(); p != nil; p = p.Parent() {
+			switch p.Name() {
+			case "schema", "install-skills", "config":
+				return nil
+			}
 		}
 
 		cfgPath := os.Getenv("INTERVALS_CONFIG")
@@ -58,6 +66,8 @@ func init() {
 	rootCmd.PersistentFlags().String("api-key", "", "API key (overrides config)")
 	rootCmd.PersistentFlags().String("athlete-id", "", "Athlete ID (overrides config)")
 	rootCmd.PersistentFlags().String("base-url", "", "API base URL (overrides config)")
+	rootCmd.PersistentFlags().String("json", "", "Raw JSON request body for write ops; see 'intervals schema <op>' for the shape")
+	rootCmd.PersistentFlags().String("params", "", "Raw JSON object overlaying query/path params, e.g. '{\"id\":\"abc\"}'")
 }
 
 // confirmDelete prompts for confirmation on delete operations.

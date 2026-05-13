@@ -34,9 +34,9 @@ func newSharedEventsGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get a shared event by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sharedEventID, _ := cmd.Flags().GetString("shared-event-id")
-			if sharedEventID == "" {
-				return fmt.Errorf("--shared-event-id is required")
+			sharedEventID, err := requireString(cmd, "shared-event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("shared-event-id", sharedEventID); err != nil {
 				return err
@@ -54,9 +54,9 @@ func newSharedEventsGetBySlugCmd() *cobra.Command {
 		Use:   "get-by-slug",
 		Short: "Get a shared event by slug",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			slug, _ := cmd.Flags().GetString("slug")
-			if slug == "" {
-				return fmt.Errorf("--slug is required")
+			slug, err := requireString(cmd, "slug")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("slug", slug); err != nil {
 				return err
@@ -74,9 +74,9 @@ func newSharedEventsCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create a shared event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with shared event payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if v, _ := cmd.Flags().GetString("link-to-event-id"); v != "" {
@@ -85,7 +85,6 @@ func newSharedEventsCreateCmd() *cobra.Command {
 			return doMutate(cmd, "POST", "/api/v1/shared-event", params, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Shared event JSON payload (required)")
 	cmd.Flags().String("link-to-event-id", "", "Link to existing event ID")
 	return cmd
 }
@@ -95,23 +94,22 @@ func newSharedEventsUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update a shared event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sharedEventID, _ := cmd.Flags().GetString("shared-event-id")
-			if sharedEventID == "" {
-				return fmt.Errorf("--shared-event-id is required")
+			sharedEventID, err := requireString(cmd, "shared-event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("shared-event-id", sharedEventID); err != nil {
 				return err
 			}
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with shared event payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{"sharedEventId": sharedEventID}
 			return doMutate(cmd, "PUT", "/api/v1/shared-event/{sharedEventId}", params, jsonBody)
 		},
 	}
 	cmd.Flags().String("shared-event-id", "", "Shared event ID (required)")
-	cmd.Flags().String("json", "", "Shared event JSON payload (required)")
 	return cmd
 }
 
@@ -120,9 +118,9 @@ func newSharedEventsDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a shared event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sharedEventID, _ := cmd.Flags().GetString("shared-event-id")
-			if sharedEventID == "" {
-				return fmt.Errorf("--shared-event-id is required")
+			sharedEventID, err := requireString(cmd, "shared-event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("shared-event-id", sharedEventID); err != nil {
 				return err
@@ -140,16 +138,16 @@ func newSharedEventsUploadImageCmd() *cobra.Command {
 		Use:   "upload-image",
 		Short: "Upload an image for a shared event",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sharedEventID, _ := cmd.Flags().GetString("shared-event-id")
-			if sharedEventID == "" {
-				return fmt.Errorf("--shared-event-id is required")
+			sharedEventID, err := requireString(cmd, "shared-event-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("shared-event-id", sharedEventID); err != nil {
 				return err
 			}
-			file, _ := cmd.Flags().GetString("file")
-			if file == "" {
-				return fmt.Errorf("--file is required")
+			file, err := requireString(cmd, "file")
+			if err != nil {
+				return err
 			}
 
 			data, err := os.ReadFile(file)

@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -39,9 +37,9 @@ func newMiscDownloadWorkoutCmd() *cobra.Command {
 		Short: "Download a workout file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ext, _ := cmd.Flags().GetString("ext")
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with workout payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			params := map[string]string{}
 			if ext != "" {
@@ -52,7 +50,6 @@ func newMiscDownloadWorkoutCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("ext", "", "File extension (e.g. .zwo)")
-	cmd.Flags().String("json", "", "Workout JSON payload (required)")
 	return cmd
 }
 
@@ -61,14 +58,13 @@ func newMiscUpdateAthletePlansCmd() *cobra.Command {
 		Use:   "update-athlete-plans",
 		Short: "Update athlete plans",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with athlete plans payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "PUT", "/api/v1/athlete-plans", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Athlete plans JSON payload (required)")
 	return cmd
 }
 

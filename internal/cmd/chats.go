@@ -29,9 +29,9 @@ func newChatsGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get a chat by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			chatID, _ := cmd.Flags().GetString("chat-id")
-			if chatID == "" {
-				return fmt.Errorf("--chat-id is required")
+			chatID, err := requireString(cmd, "chat-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("chat-id", chatID); err != nil {
 				return err
@@ -49,9 +49,9 @@ func newChatsMessagesCmd() *cobra.Command {
 		Use:   "messages",
 		Short: "Get messages in a chat",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			chatID, _ := cmd.Flags().GetString("chat-id")
-			if chatID == "" {
-				return fmt.Errorf("--chat-id is required")
+			chatID, err := requireString(cmd, "chat-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("chat-id", chatID); err != nil {
 				return err
@@ -77,14 +77,13 @@ func newChatsSendCmd() *cobra.Command {
 		Use:   "send",
 		Short: "Send a chat message",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			jsonBody, _ := cmd.Flags().GetString("json")
-			if jsonBody == "" {
-				return fmt.Errorf("--json is required with message payload")
+			jsonBody, err := requireJSON(cmd)
+			if err != nil {
+				return err
 			}
 			return doMutate(cmd, "POST", "/api/v1/chats/send-message", nil, jsonBody)
 		},
 	}
-	cmd.Flags().String("json", "", "Message JSON payload (required)")
 	return cmd
 }
 
@@ -93,16 +92,16 @@ func newChatsDeleteMessageCmd() *cobra.Command {
 		Use:   "delete-message",
 		Short: "Delete a chat message",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			chatID, _ := cmd.Flags().GetString("chat-id")
-			if chatID == "" {
-				return fmt.Errorf("--chat-id is required")
+			chatID, err := requireString(cmd, "chat-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("chat-id", chatID); err != nil {
 				return err
 			}
-			msgID, _ := cmd.Flags().GetString("msg-id")
-			if msgID == "" {
-				return fmt.Errorf("--msg-id is required")
+			msgID, err := requireString(cmd, "msg-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("msg-id", msgID); err != nil {
 				return err
@@ -121,16 +120,16 @@ func newChatsMarkSeenCmd() *cobra.Command {
 		Use:   "mark-seen",
 		Short: "Mark a message as seen",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			chatID, _ := cmd.Flags().GetString("chat-id")
-			if chatID == "" {
-				return fmt.Errorf("--chat-id is required")
+			chatID, err := requireString(cmd, "chat-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("chat-id", chatID); err != nil {
 				return err
 			}
-			msgID, _ := cmd.Flags().GetString("msg-id")
-			if msgID == "" {
-				return fmt.Errorf("--msg-id is required")
+			msgID, err := requireString(cmd, "msg-id")
+			if err != nil {
+				return err
 			}
 			if err := validate.PathParam("msg-id", msgID); err != nil {
 				return err
