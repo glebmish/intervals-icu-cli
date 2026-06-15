@@ -7,7 +7,6 @@ Go CLI (`intervals`) for the intervals.icu API. 148 operations across 13 resourc
 ## Build & Test
 
 ```bash
-export PATH="$HOME/go-dist/go/bin:$PATH"
 go build -o intervals .
 go test ./...
 go vet ./...
