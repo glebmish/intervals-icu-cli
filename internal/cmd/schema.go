@@ -447,21 +447,24 @@ func resolveAllRefs(v interface{}, schemas map[string]interface{}, seen map[stri
 	case map[string]interface{}:
 		if ref, ok := val["$ref"].(string); ok {
 			refName := strings.TrimPrefix(ref, "#/components/schemas/")
-			if !seen[refName] {
-				if schema, ok := schemas[refName].(map[string]interface{}); ok {
-					seen[refName] = true
-					for k, sv := range schema {
-						if k != "$ref" {
-							val[k] = deepCopy(sv)
-						}
-					}
-					resolveAllRefs(val, schemas, seen)
-					delete(seen, refName)
-				}
+			if seen[refName] {
+				return // cycle: leave $ref to terminate expansion
 			}
+			if schema, ok := schemas[refName].(map[string]interface{}); ok {
+				seen[refName] = true
+				delete(val, "$ref")
+				for k, sv := range schema {
+					if k != "$ref" {
+						val[k] = deepCopy(sv)
+					}
+				}
+				resolveAllRefs(val, schemas, seen)
+				delete(seen, refName)
+			}
+			return
 		}
-		for _, v := range val {
-			resolveAllRefs(v, schemas, seen)
+		for _, child := range val {
+			resolveAllRefs(child, schemas, seen)
 		}
 	case []interface{}:
 		for _, item := range val {

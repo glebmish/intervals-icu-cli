@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/glebmish/intervals-icu-cli/internal/validate"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +38,11 @@ func newMiscDownloadWorkoutCmd() *cobra.Command {
 		Short: "Download a workout file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ext, _ := cmd.Flags().GetString("ext")
+			if ext != "" {
+				if err := validate.PathParam("ext", ext); err != nil {
+					return err
+				}
+			}
 			jsonBody, err := requireJSON(cmd)
 			if err != nil {
 				return err

@@ -158,6 +158,42 @@ func TestAPIErrorFormatting(t *testing.T) {
 	}
 }
 
+func TestDoRejectsPathInjection(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server should not be reached for injection attempt: %s", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key", "i123")
+	cases := []string{"a/../b", "a?b", "a#frag", "a&x=1", "a%2e"}
+	for _, bad := range cases {
+		_, err := client.Do("GET", "/api/v1/athlete/{athleteId}/activities/{activityId}", map[string]string{"activityId": bad}, nil)
+		if err == nil {
+			t.Errorf("Do() with activityId=%q: expected error, got nil", bad)
+		}
+	}
+}
+
+func TestDryRunReturnsString(t *testing.T) {
+	client := NewClient("https://example.com", "test-key", "i123")
+	out, err := client.DryRun("GET", "/api/v1/athlete/{athleteId}/activities/{activityId}", map[string]string{"activityId": "abc42"}, nil)
+	if err != nil {
+		t.Fatalf("DryRun() error = %v", err)
+	}
+	if !strings.Contains(out, "abc42") || !strings.Contains(out, "i123") {
+		t.Errorf("DryRun() = %q, want it to contain abc42 and i123", out)
+	}
+}
+
+func TestDryRunErrorsOnBadPathValue(t *testing.T) {
+	client := NewClient("https://example.com", "test-key", "i123")
+	_, err := client.DryRun("GET", "/api/v1/athlete/{athleteId}/activities/{activityId}", map[string]string{"activityId": "a/../b"}, nil)
+	if err == nil {
+		t.Fatal("DryRun() error = nil, want error for injection path value")
+	}
+}
+
 func TestDeleteRequest(t *testing.T) {
 	var capturedMethod string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

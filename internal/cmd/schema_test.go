@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -133,6 +134,61 @@ func TestSchemaOutputIsValidJSON(t *testing.T) {
 	}
 	if len(data) < 10 {
 		t.Error("schema output too small")
+	}
+}
+
+func TestResolveAllRefsSimple(t *testing.T) {
+	schemas := map[string]interface{}{
+		"Inner": map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"name": map[string]interface{}{"type": "string"},
+			},
+		},
+	}
+	doc := map[string]interface{}{
+		"field": map[string]interface{}{"$ref": "#/components/schemas/Inner"},
+	}
+	resolveAllRefs(doc, schemas, map[string]bool{})
+	field, _ := doc["field"].(map[string]interface{})
+	if field == nil {
+		t.Fatal("field missing after resolve")
+	}
+	if _, hasRef := field["$ref"]; hasRef {
+		t.Errorf("resolved field should not contain $ref: %v", field)
+	}
+	if field["type"] != "object" {
+		t.Errorf("resolved field should be inlined Inner, got %v", field)
+	}
+}
+
+func TestResolveAllRefsRecursiveTerminates(t *testing.T) {
+	// Self-referential schema: Node has a child of type Node.
+	schemas := map[string]interface{}{
+		"Node": map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"child": map[string]interface{}{"$ref": "#/components/schemas/Node"},
+			},
+		},
+	}
+	doc := map[string]interface{}{"$ref": "#/components/schemas/Node"}
+
+	done := make(chan struct{})
+	go func() {
+		resolveAllRefs(doc, schemas, map[string]bool{})
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("resolveAllRefs did not terminate on recursive schema")
+	}
+
+	// Output must still be serializable (no infinite structure) and the inner
+	// cycle leaves a $ref to terminate.
+	if _, err := json.Marshal(doc); err != nil {
+		t.Fatalf("resolved recursive schema not serializable: %v", err)
 	}
 }
 

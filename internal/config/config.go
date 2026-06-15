@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -73,5 +74,33 @@ func (c *Config) Validate() error {
 			"athlete_id not configured\n  Set it in %s or INTERVALS_ATHLETE_ID env var\n  Run: intervals config init",
 			DefaultPath())}
 	}
+	if err := validateBaseURL(c.BaseURL); err != nil {
+		return err
+	}
 	return nil
+}
+
+func validateBaseURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return &cliexit.ValidationError{Err: fmt.Errorf("base_url: invalid URL %q: %w", raw, err)}
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return &cliexit.ValidationError{Err: fmt.Errorf("base_url: must be http or https, got %q", raw)}
+	}
+	if u.Host == "" {
+		return &cliexit.ValidationError{Err: fmt.Errorf("base_url: missing host in %q", raw)}
+	}
+	if u.Scheme == "http" && !isLoopbackHost(u.Hostname()) {
+		return &cliexit.ValidationError{Err: fmt.Errorf("base_url: refusing http:// for non-loopback host %q (use https:// so the API key isn't sent in cleartext)", u.Host)}
+	}
+	return nil
+}
+
+func isLoopbackHost(host string) bool {
+	switch host {
+	case "localhost", "127.0.0.1", "::1":
+		return true
+	}
+	return false
 }

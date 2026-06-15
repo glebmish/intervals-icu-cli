@@ -112,10 +112,10 @@ func newActivitiesIntervalSearchCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			params := map[string]string{}
 			for _, flag := range []string{"min-secs", "max-secs", "min-intensity", "max-intensity"} {
-				v, _ := cmd.Flags().GetInt(flag)
-				if v == 0 {
+				if !cmd.Flags().Changed(flag) {
 					return validationErr(fmt.Errorf("--%s is required", flag))
 				}
+				v, _ := cmd.Flags().GetInt(flag)
 				apiParam := map[string]string{
 					"min-secs":      "minSecs",
 					"max-secs":      "maxSecs",
@@ -191,8 +191,11 @@ func newActivitiesUploadCmd() *cobra.Command {
 
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			if dryRun {
-				fmt.Print(c.DryRun("POST", "/api/v1/athlete/{id}/activities", params, []byte(fmt.Sprintf("<binary file: %s, %d bytes>", file, len(data)))))
-				return nil
+				out, err := c.DryRun("POST", "/api/v1/athlete/{id}/activities", params, []byte(fmt.Sprintf("<binary file: %s, %d bytes>", file, len(data))))
+				if err != nil {
+					return err
+				}
+				return format.DryRunOutput(os.Stdout, out)
 			}
 
 			resp, err := c.Do("POST", "/api/v1/athlete/{id}/activities", params, data)
@@ -256,6 +259,9 @@ func newActivitiesGetMultipleCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ids, err := requireString(cmd, "ids")
 			if err != nil {
+				return err
+			}
+			if err := validate.PathParam("ids", ids); err != nil {
 				return err
 			}
 			params := map[string]string{"ids": ids}

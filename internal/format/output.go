@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -43,6 +44,7 @@ func Write(w io.Writer, data []byte, opts Options) error {
 	v = sanitize(v)
 
 	if len(opts.Fields) > 0 {
+		warnUnknownFields(v, opts.Fields)
 		v = filterFields(v, opts.Fields)
 	}
 
@@ -69,7 +71,7 @@ func sanitize(v interface{}) interface{} {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(val))
 		for k, child := range val {
-			out[k] = sanitize(child)
+			out[sanitizeString(k)] = sanitize(child)
 		}
 		return out
 	case []interface{}:
@@ -153,6 +155,42 @@ func writeJSONLine(w io.Writer, v interface{}) error {
 	buf.WriteByte('\n')
 	_, err = w.Write(buf.Bytes())
 	return err
+}
+
+func warnUnknownFields(v interface{}, fields []string) {
+	keys := topLevelKeys(v)
+	if keys == nil {
+		return
+	}
+	for _, f := range fields {
+		seg := strings.SplitN(f, ".", 2)[0]
+		if !keys[seg] {
+			fmt.Fprintf(os.Stderr, "warning: --fields: %q not found in response\n", seg)
+		}
+	}
+}
+
+func topLevelKeys(v interface{}) map[string]bool {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		keys := map[string]bool{}
+		for k := range val {
+			keys[k] = true
+		}
+		return keys
+	case []interface{}:
+		keys := map[string]bool{}
+		for _, elem := range val {
+			if m, ok := elem.(map[string]interface{}); ok {
+				for k := range m {
+					keys[k] = true
+				}
+			}
+		}
+		return keys
+	default:
+		return nil
+	}
 }
 
 // filterFields keeps only the requested paths. Dotted paths descend through

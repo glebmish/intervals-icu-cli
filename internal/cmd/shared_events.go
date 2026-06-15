@@ -155,8 +155,11 @@ func newSharedEventsUploadImageCmd() *cobra.Command {
 
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			if dryRun {
-				fmt.Print(c.DryRun("POST", "/api/v1/shared-event/{sharedEventId}/image", params, []byte(fmt.Sprintf("<binary file: %s, %d bytes>", file, len(data)))))
-				return nil
+				out, err := c.DryRun("POST", "/api/v1/shared-event/{sharedEventId}/image", params, []byte(fmt.Sprintf("<binary file: %s, %d bytes>", file, len(data))))
+				if err != nil {
+					return err
+				}
+				return format.DryRunOutput(os.Stdout, out)
 			}
 
 			resp, err := c.Do("POST", "/api/v1/shared-event/{sharedEventId}/image", params, data)

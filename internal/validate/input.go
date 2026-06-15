@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -55,17 +54,6 @@ func FilePath(name, value string) (string, error) {
 		return "", vErr("field %q: contains NUL byte", name)
 	}
 	return filepath.Clean(value), nil
-}
-
-// IntParam validates that a string parses as a Go int (allows negatives).
-func IntParam(name, value string) error {
-	if value == "" {
-		return vErr("field %q: must not be empty", name)
-	}
-	if _, err := strconv.Atoi(value); err != nil {
-		return vErr("field %q: expected integer, got %q", name, value)
-	}
-	return nil
 }
 
 // DateParam accepts ISO YYYY-MM-DD only.

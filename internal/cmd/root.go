@@ -77,8 +77,8 @@ func confirmDelete(cmd *cobra.Command, resource, id string) error {
 		return nil
 	}
 
-	fi, _ := os.Stdin.Stat()
-	if (fi.Mode() & os.ModeCharDevice) == 0 {
+	fi, err := os.Stdin.Stat()
+	if err != nil || (fi.Mode()&os.ModeCharDevice) == 0 {
 		return fmt.Errorf("delete %s %s requires --yes flag in non-interactive mode", resource, id)
 	}
 

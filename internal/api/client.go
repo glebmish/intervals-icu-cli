@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/glebmish/intervals-icu-cli/internal/validate"
 )
 
 // contextKey is an unexported type for context keys in this package.
@@ -94,36 +96,9 @@ func (c *Client) Do(method, pathTemplate string, params map[string]string, body 
 // DoWithContext executes an HTTP request with the provided context.
 // It performs path substitution, sets query params, adds Basic Auth, and handles errors.
 func (c *Client) DoWithContext(ctx context.Context, method, pathTemplate string, params map[string]string, body []byte) (*http.Response, error) {
-	// Copy params so we don't mutate the caller's map
-	remaining := make(map[string]string)
-	for k, v := range params {
-		remaining[k] = v
-	}
-
-	// Perform path substitution
-	path := pathTemplate
-
-	// {id} and {athleteId} → athleteID (built-in substitutions)
-	path = strings.ReplaceAll(path, "{id}", c.athleteID)
-	path = strings.ReplaceAll(path, "{athleteId}", c.athleteID)
-
-	// Other {key} → params[key], consumed from remaining
-	for k, v := range remaining {
-		placeholder := "{" + k + "}"
-		if strings.Contains(path, placeholder) {
-			path = strings.ReplaceAll(path, placeholder, v)
-			delete(remaining, k)
-		}
-	}
-
-	// Build URL with remaining params as query string
-	rawURL := c.baseURL + path
-	if len(remaining) > 0 {
-		q := url.Values{}
-		for k, v := range remaining {
-			q.Set(k, v)
-		}
-		rawURL += "?" + q.Encode()
+	rawURL, path, err := c.buildURL(pathTemplate, params)
+	if err != nil {
+		return nil, err
 	}
 
 	var bodyReader io.Reader
@@ -163,28 +138,35 @@ func (c *Client) DoWithContext(ctx context.Context, method, pathTemplate string,
 	return resp, nil
 }
 
-// DryRun returns a string describing the request without executing it.
-func (c *Client) DryRun(method, pathTemplate string, params map[string]string, body []byte) string {
-	// Copy params
-	remaining := make(map[string]string)
+// buildURL performs path substitution and assembles the full request URL. Every
+// value substituted into a {placeholder} path segment is validated with
+// validate.PathParam so user-supplied IDs (named flags, --params, --ext, the
+// athlete id) cannot inject path/query/fragment syntax. Unconsumed params become
+// query-string values (already percent-encoded by url.Values.Encode).
+func (c *Client) buildURL(pathTemplate string, params map[string]string) (rawURL, path string, err error) {
+	remaining := make(map[string]string, len(params))
 	for k, v := range params {
 		remaining[k] = v
 	}
-
-	// Path substitution
-	path := pathTemplate
-	path = strings.ReplaceAll(path, "{id}", c.athleteID)
-	path = strings.ReplaceAll(path, "{athleteId}", c.athleteID)
-
+	path = pathTemplate
+	if strings.Contains(path, "{id}") || strings.Contains(path, "{athleteId}") {
+		if err := validate.PathParam("athlete_id", c.athleteID); err != nil {
+			return "", "", err
+		}
+		path = strings.ReplaceAll(path, "{id}", c.athleteID)
+		path = strings.ReplaceAll(path, "{athleteId}", c.athleteID)
+	}
 	for k, v := range remaining {
 		placeholder := "{" + k + "}"
 		if strings.Contains(path, placeholder) {
+			if err := validate.PathParam(k, v); err != nil {
+				return "", "", err
+			}
 			path = strings.ReplaceAll(path, placeholder, v)
 			delete(remaining, k)
 		}
 	}
-
-	rawURL := c.baseURL + path
+	rawURL = c.baseURL + path
 	if len(remaining) > 0 {
 		q := url.Values{}
 		for k, v := range remaining {
@@ -192,7 +174,15 @@ func (c *Client) DryRun(method, pathTemplate string, params map[string]string, b
 		}
 		rawURL += "?" + q.Encode()
 	}
+	return rawURL, path, nil
+}
 
+// DryRun returns a string describing the request without executing it.
+func (c *Client) DryRun(method, pathTemplate string, params map[string]string, body []byte) (string, error) {
+	rawURL, _, err := c.buildURL(pathTemplate, params)
+	if err != nil {
+		return "", err
+	}
 	result := fmt.Sprintf("%s %s", method, rawURL)
 	if len(body) > 0 {
 		preview := string(body)
@@ -201,5 +191,5 @@ func (c *Client) DryRun(method, pathTemplate string, params map[string]string, b
 		}
 		result += fmt.Sprintf(" body: %s", preview)
 	}
-	return result
+	return result, nil
 }

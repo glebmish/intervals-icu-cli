@@ -124,9 +124,15 @@ func newWellnessListCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			params := map[string]string{}
 			if v, _ := cmd.Flags().GetString("oldest"); v != "" {
+				if err := validate.DateParam("oldest", v); err != nil {
+					return err
+				}
 				params["oldest"] = v
 			}
 			if v, _ := cmd.Flags().GetString("newest"); v != "" {
+				if err := validate.DateParam("newest", v); err != nil {
+					return err
+				}
 				params["newest"] = v
 			}
 			if v, _ := cmd.Flags().GetString("cols"); v != "" {
@@ -136,6 +142,11 @@ func newWellnessListCmd() *cobra.Command {
 				params["fields"] = v
 			}
 			ext, _ := cmd.Flags().GetString("ext")
+			if ext != "" {
+				if err := validate.PathParam("ext", ext); err != nil {
+					return err
+				}
+			}
 			path := "/api/v1/athlete/{id}/wellness" + ext
 			return doGet(cmd, path, params)
 		},

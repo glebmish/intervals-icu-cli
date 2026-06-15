@@ -150,6 +150,9 @@ func newEventsDeleteCmd() *cobra.Command {
 				params["others"] = "true"
 			}
 			if v, _ := cmd.Flags().GetString("not-before"); v != "" {
+				if err := validate.DateParam("not-before", v); err != nil {
+					return err
+				}
 				params["notBefore"] = v
 			}
 			return doDelete(cmd, "/api/v1/athlete/{id}/events/{eventId}", params, "event", eventID)
@@ -310,6 +313,11 @@ func newEventsDownloadWorkoutCmd() *cobra.Command {
 				return err
 			}
 			ext, _ := cmd.Flags().GetString("ext")
+			if ext != "" {
+				if err := validate.PathParam("ext", ext); err != nil {
+					return err
+				}
+			}
 			output, _ := cmd.Flags().GetString("output")
 			params := map[string]string{"eventId": eventID}
 			path := "/api/v1/athlete/{id}/events/{eventId}/download" + ext

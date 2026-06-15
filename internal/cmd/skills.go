@@ -205,6 +205,10 @@ func splitFrontmatter(content []byte) (frontmatter, body []byte) {
 		end = bytes.Index(rest, []byte("\n---\r\n"))
 		delimLen = len("\n---\r\n")
 	}
+	if end < 0 && bytes.HasSuffix(rest, []byte("\n---")) {
+		end = len(rest) - len("\n---")
+		delimLen = len("\n---")
+	}
 	if end < 0 {
 		return nil, content
 	}

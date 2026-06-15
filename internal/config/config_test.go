@@ -139,3 +139,32 @@ func TestValidateMissingAthleteID(t *testing.T) {
 		t.Error("Validate() = nil, want error for missing AthleteID")
 	}
 }
+
+func TestValidateBaseURL(t *testing.T) {
+	cases := []struct {
+		name    string
+		baseURL string
+		wantErr bool
+	}{
+		{"https intervals", "https://intervals.icu", false},
+		{"loopback http with port", "http://127.0.0.1:8080", false},
+		{"localhost http", "http://localhost:9000", false},
+		{"ipv6 loopback http", "http://[::1]:8080", false},
+		{"non-loopback http", "http://evil.com", true},
+		{"ftp scheme", "ftp://intervals.icu", true},
+		{"empty host", "https://", true},
+		{"no scheme", "intervals.icu", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{APIKey: "k", AthleteID: "i123", BaseURL: tc.baseURL}
+			err := cfg.Validate()
+			if tc.wantErr && err == nil {
+				t.Errorf("Validate() with base_url %q = nil, want error", tc.baseURL)
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("Validate() with base_url %q = %v, want nil", tc.baseURL, err)
+			}
+		})
+	}
+}

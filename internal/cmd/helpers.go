@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/glebmish/intervals-icu-cli/internal/api"
 	"github.com/glebmish/intervals-icu-cli/internal/cliexit"
@@ -38,8 +39,10 @@ func mergeParams(cmd *cobra.Command, base map[string]string) (map[string]string,
 		if err := validate.JSONBody(raw); err != nil {
 			return nil, err
 		}
+		dec := json.NewDecoder(strings.NewReader(raw))
+		dec.UseNumber()
 		var m map[string]any
-		if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		if err := dec.Decode(&m); err != nil {
 			return nil, validationErr(fmt.Errorf("--params: %w", err))
 		}
 		for k, v := range m {
@@ -112,7 +115,11 @@ func doGet(cmd *cobra.Command, path string, params map[string]string) error {
 	c := api.FromContext(cmd.Context())
 
 	if dr, _ := cmd.Flags().GetBool("dry-run"); dr {
-		return format.DryRunOutput(os.Stdout, c.DryRun("GET", path, merged, nil))
+		out, err := c.DryRun("GET", path, merged, nil)
+		if err != nil {
+			return err
+		}
+		return format.DryRunOutput(os.Stdout, out)
 	}
 
 	resp, err := c.Do("GET", path, merged, nil)
@@ -143,7 +150,11 @@ func doMutate(cmd *cobra.Command, method, path string, params map[string]string,
 	}
 
 	if dr, _ := cmd.Flags().GetBool("dry-run"); dr {
-		return format.DryRunOutput(os.Stdout, c.DryRun(method, path, merged, body))
+		out, err := c.DryRun(method, path, merged, body)
+		if err != nil {
+			return err
+		}
+		return format.DryRunOutput(os.Stdout, out)
 	}
 
 	resp, err := c.Do(method, path, merged, body)
@@ -172,7 +183,11 @@ func doDelete(cmd *cobra.Command, path string, params map[string]string, resourc
 	c := api.FromContext(cmd.Context())
 
 	if dr, _ := cmd.Flags().GetBool("dry-run"); dr {
-		return format.DryRunOutput(os.Stdout, c.DryRun("DELETE", path, merged, nil))
+		out, err := c.DryRun("DELETE", path, merged, nil)
+		if err != nil {
+			return err
+		}
+		return format.DryRunOutput(os.Stdout, out)
 	}
 
 	resp, err := c.Do("DELETE", path, merged, nil)
@@ -200,7 +215,11 @@ func doDownload(cmd *cobra.Command, path string, params map[string]string, outpu
 	c := api.FromContext(cmd.Context())
 
 	if dr, _ := cmd.Flags().GetBool("dry-run"); dr {
-		return format.DryRunOutput(os.Stdout, c.DryRun("GET", path, merged, nil))
+		out, err := c.DryRun("GET", path, merged, nil)
+		if err != nil {
+			return err
+		}
+		return format.DryRunOutput(os.Stdout, out)
 	}
 
 	resp, err := c.Do("GET", path, merged, nil)
@@ -208,18 +227,27 @@ func doDownload(cmd *cobra.Command, path string, params map[string]string, outpu
 		return err
 	}
 	defer resp.Body.Close()
+
+	if outputPath != "" {
+		clean, err := validate.FilePath("out", outputPath)
+		if err != nil {
+			return err
+		}
+		f, err := os.OpenFile(clean, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return fmt.Errorf("writing file: %w", err)
+		}
+		defer f.Close()
+		if _, err := io.Copy(f, resp.Body); err != nil {
+			return fmt.Errorf("writing file: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "Downloaded to %s\n", clean)
+		return nil
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("reading response: %w", err)
 	}
-
-	if outputPath != "" {
-		if err := os.WriteFile(outputPath, body, 0644); err != nil {
-			return fmt.Errorf("writing file: %w", err)
-		}
-		fmt.Fprintf(os.Stderr, "Downloaded to %s\n", outputPath)
-		return nil
-	}
-
 	return format.WriteRaw(os.Stdout, body)
 }
