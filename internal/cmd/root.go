@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/glebmish/intervals-icu-cli/internal/api"
 	"github.com/glebmish/intervals-icu-cli/internal/config"
@@ -18,11 +19,39 @@ var (
 	date    = "unknown"
 )
 
+// versionString renders the --version output. When -ldflags weren't applied
+// (a plain `go install ...@vX.Y.Z` build, where version is still "dev"), it
+// falls back to the module version and VCS metadata Go embeds in the binary,
+// so `go install ...@v0.1.0` reports v0.1.0 instead of "dev".
+func versionString() string {
+	v, c, d := version, commit, date
+	if v == "dev" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			if info.Main.Version != "" && info.Main.Version != "(devel)" {
+				v = info.Main.Version
+			}
+			for _, s := range info.Settings {
+				switch s.Key {
+				case "vcs.revision":
+					if s.Value != "" {
+						c = s.Value
+					}
+				case "vcs.time":
+					if s.Value != "" {
+						d = s.Value
+					}
+				}
+			}
+		}
+	}
+	return fmt.Sprintf("%s (commit %s, built %s)", v, c, d)
+}
+
 var rootCmd = &cobra.Command{
 	Use:          "intervals",
 	Short:        "CLI for the intervals.icu API",
 	Long:         "intervals is a command-line interface for the intervals.icu training analytics platform.\nDesigned for AI agents and human operators. 100% API coverage.",
-	Version:      fmt.Sprintf("%s (commit %s, built %s)", version, commit, date),
+	Version:      versionString(),
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Offline commands skip config loading.
