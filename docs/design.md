@@ -44,9 +44,11 @@ ID is a top-level concern stored in config.
 
 ## Source
 - HTTP API with an OpenAPI spec.
-- The spec is embedded at `openapi-spec.json` (`//go:embed` in `schema.go`):
-  148 operations across 13 resource groups. The `schema` command is derived from
-  it and runs offline, without credentials.
+- The canonical spec is checked in at the repo root as `openapi-spec.json`; a
+  byte-identical mirror at `internal/cmd/openapi-spec.json` is what `//go:embed`
+  in `schema.go` consumes (keep both in sync). 148 operations across 13 resource
+  groups. The `schema` command is derived from it and runs offline, without
+  credentials.
 
 ## Resource groups
 activities, activity, athlete, chats, custom-items, events, folders, gear, misc,
@@ -92,7 +94,8 @@ Listing endpoints window by date range (`oldest`/`newest`) plus an optional
 - 4 discovery/schema error
 - 5 internal error (panic, recovered in `main.go`)
 
-The mapping lives in `main.go::exitCode`.
+Codes 1–4 are mapped in `main.go::exitCode`; code 5 is emitted by the
+panic-recover block in `main.go::main`.
 
 ## Error messages
 The API client's error formatter (`internal/api/client.go::Error()`) always
