@@ -1,2 +1,22 @@
+# Build artifacts
 .worktrees/
 intervals
+dist/
+
+# Local config & secrets (real config lives at ~/.config/intervals/config.yaml)
+config.yaml
+.env
+.env.*
+!.env.example
+
+# Test / coverage output
+*.out
+coverage.*
+
+# Local agent / editor config
+.claude/
+.idea/
+.vscode/
+
+# macOS junk
+.DS_Store
