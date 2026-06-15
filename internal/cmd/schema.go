@@ -241,7 +241,6 @@ func parseSchemaPath(path string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-
 func buildOperationIndex(spec map[string]interface{}) map[string]operationEntry {
 	index := make(map[string]operationEntry)
 	paths, ok := spec["paths"].(map[string]interface{})

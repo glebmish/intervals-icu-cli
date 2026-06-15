@@ -1,0 +1,47 @@
+name: Release
+
+# Releases are cut by pushing a semver tag, e.g.:
+#   git tag v1.2.3 && git push origin v1.2.3
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  # Required for GoReleaser to create the GitHub Release and upload assets.
+  contents: write
+
+jobs:
+  goreleaser:
+    name: GoReleaser
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          # GoReleaser's changelog needs full history and tags.
+          fetch-depth: 0
+
+      - name: Set up Go
+        # actions/setup-go@v5.2.0
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
+        with:
+          go-version-file: go.mod
+          check-latest: true
+          cache: true
+
+      - name: Run GoReleaser
+        # goreleaser/goreleaser-action@v6.1.0
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          # Used by GoReleaser to create the GitHub Release on this repo.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT with write access to glebmish/homebrew-tap. GITHUB_TOKEN is
+          # scoped to this repo only and cannot push the formula cross-repo.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

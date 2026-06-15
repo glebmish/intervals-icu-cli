@@ -9,10 +9,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Build metadata, overridden at release time via -ldflags. Defaults describe a
+// non-release (source / `go install`) build. GoReleaser injects real values via
+// -X github.com/glebmish/intervals-icu-cli/internal/cmd.{version,commit,date}.
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 var rootCmd = &cobra.Command{
 	Use:          "intervals",
 	Short:        "CLI for the intervals.icu API",
 	Long:         "intervals is a command-line interface for the intervals.icu training analytics platform.\nDesigned for AI agents and human operators. 100% API coverage.",
+	Version:      fmt.Sprintf("%s (commit %s, built %s)", version, commit, date),
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Offline commands skip config loading.
