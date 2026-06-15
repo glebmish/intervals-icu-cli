@@ -142,7 +142,7 @@ intervals folders <action> [flags]
 | `update-workouts` | Update workouts in a folder (`--folder-id`, `--json`) |
 | `shared-with` | Get folder sharing settings (`--folder-id`) |
 | `update-shared-with` | Update folder sharing (`--folder-id`, `--json`) |
-| `import-workout` | Import a workout into a folder (`--folder-id`, `--file`) |
+| `import-workout` | Import a workout into a folder (`--folder-id`, `--json`) |
 
 ## chats
 
@@ -175,7 +175,7 @@ intervals shared-events <action> [flags]
 | `create` | Create a shared event (`--json`) |
 | `update` | Update a shared event (`--event-id`, `--json`) |
 | `delete` | Delete a shared event (`--event-id`) |
-| `upload-image` | Upload an image for a shared event (`--event-id`, `--file`) |
+| `upload-image` | Upload an image for a shared event (`--shared-event-id`, `--upload`) |
 
 ## custom-items
 
@@ -192,7 +192,7 @@ intervals custom-items <action> [flags]
 | `create` | Create a custom item (`--json`) |
 | `update` | Update a custom item (`--item-id`, `--json`) |
 | `delete` | Delete a custom item (`--item-id`) |
-| `upload-image` | Upload image for a custom item (`--item-id`, `--file`) |
+| `upload-image` | Upload image for a custom item (`--item-id`, `--upload`) |
 | `update-indexes` | Update custom item indexes (`--json`) |
 
 ## misc

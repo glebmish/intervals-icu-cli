@@ -36,11 +36,21 @@ func (e *APIError) Error() string {
 	}
 	switch e.StatusCode {
 	case 401:
-		msg += " (hint: check your API key)"
+		msg += " (hint: check INTERVALS_API_KEY - may be expired or wrong scope)"
+	case 403:
+		msg += " (hint: check the permissions on this API key)"
 	case 404:
-		msg += " (hint: resource not found - check the athlete ID or resource ID)"
+		msg += " (hint: resource not found - check the athlete ID or resource ID; run the relevant list command to see valid IDs)"
+	case 409:
+		msg += " (hint: concurrent modification - refetch and retry)"
+	case 422:
+		msg += " (hint: validation failed server-side; run with --dry-run to inspect the body)"
 	case 429:
 		msg += " (hint: rate limited - slow down requests)"
+	case 500:
+		msg += " (hint: usually a malformed request body; run with --dry-run to inspect)"
+	case 503:
+		msg += " (hint: transient - retry with backoff)"
 	}
 	return msg
 }

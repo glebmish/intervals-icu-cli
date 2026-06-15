@@ -145,14 +145,9 @@ func newSharedEventsUploadImageCmd() *cobra.Command {
 			if err := validate.PathParam("shared-event-id", sharedEventID); err != nil {
 				return err
 			}
-			file, err := requireString(cmd, "file")
+			file, data, err := requireUploadFile(cmd)
 			if err != nil {
 				return err
-			}
-
-			data, err := os.ReadFile(file)
-			if err != nil {
-				return fmt.Errorf("reading file %s: %w", file, err)
 			}
 
 			params := map[string]string{"sharedEventId": sharedEventID}
@@ -177,6 +172,6 @@ func newSharedEventsUploadImageCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("shared-event-id", "", "Shared event ID (required)")
-	cmd.Flags().String("file", "", "Path to image file (required)")
+	addUploadFlag(cmd, "Path to image file (required)")
 	return cmd
 }

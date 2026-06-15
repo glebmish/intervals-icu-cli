@@ -29,7 +29,7 @@ athlete_id: your_athlete_id_here
 |---|---|
 | `INTERVALS_API_KEY` | API key (overrides config file) |
 | `INTERVALS_ATHLETE_ID` | Athlete ID (overrides config file) |
-| `INTERVALS_BASE_URL` | API base URL (default: `https://intervals.icu/api/v1`) |
+| `INTERVALS_BASE_URL` | API base URL (default: `https://intervals.icu`) |
 
 ## Quick Start
 
@@ -53,4 +53,12 @@ intervals schema Activity
 
 ## Agent Reference
 
-See [CONTEXT.md](CONTEXT.md) for the full agent reference, including rules of engagement, usage patterns, and resource groups.
+Agent-facing documentation ships inside the binary as skills. Browse or install them:
+
+```bash
+intervals skills list                 # list bundled skills
+intervals skills get intervals-shared # print the shared reference (global flags, exit codes, schema discovery)
+intervals skills install              # install skills into .claude/skills or .agents/skills
+```
+
+The `intervals-shared` skill is the canonical agent front door: global flags, exit codes, error hints, and schema discovery.

@@ -177,14 +177,9 @@ func newActivitiesUploadCmd() *cobra.Command {
 		Use:   "upload",
 		Short: "Upload an activity file (FIT, TCX, GPX)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			file, err := requireString(cmd, "file")
+			file, data, err := requireUploadFile(cmd)
 			if err != nil {
 				return err
-			}
-
-			data, err := os.ReadFile(file)
-			if err != nil {
-				return fmt.Errorf("reading file %s: %w", file, err)
 			}
 
 			params := map[string]string{}
@@ -212,7 +207,7 @@ func newActivitiesUploadCmd() *cobra.Command {
 			return format.Write(os.Stdout, body, fmtOpts(cmd))
 		},
 	}
-	cmd.Flags().String("file", "", "Path to activity file (required)")
+	addUploadFlag(cmd, "Path to activity file FIT/TCX/GPX (required)")
 	cmd.Flags().String("name", "", "Activity name")
 	return cmd
 }

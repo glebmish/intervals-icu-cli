@@ -61,6 +61,37 @@ func requireString(cmd *cobra.Command, name string) (string, error) {
 	return v, nil
 }
 
+// addUploadFlag registers the canonical --upload path flag plus the deprecated
+// --file alias on an upload command. design-cli §14 wants --upload as a peer of
+// --json/--params; --file is kept for back-compat.
+func addUploadFlag(cmd *cobra.Command, desc string) {
+	cmd.Flags().String("upload", "", desc)
+	cmd.Flags().String("file", "", desc+" (deprecated alias for --upload)")
+}
+
+// requireUploadFile reads the upload path from --upload (or the deprecated
+// --file alias), hardens it (§9), and returns the cleaned path plus its
+// contents. Centralizes upload input validation so every upload command
+// defends against adversarial paths.
+func requireUploadFile(cmd *cobra.Command) (string, []byte, error) {
+	raw, _ := cmd.Flags().GetString("upload")
+	if raw == "" {
+		raw, _ = cmd.Flags().GetString("file")
+	}
+	if raw == "" {
+		return "", nil, validationErr(fmt.Errorf("--upload is required"))
+	}
+	clean, err := validate.FilePath("upload", raw)
+	if err != nil {
+		return "", nil, err
+	}
+	data, err := os.ReadFile(clean)
+	if err != nil {
+		return "", nil, fmt.Errorf("reading file %s: %w", clean, err)
+	}
+	return clean, data, nil
+}
+
 // requireJSON reads --json and validates it as JSON.
 func requireJSON(cmd *cobra.Command) (string, error) {
 	body, err := requireString(cmd, "json")

@@ -132,14 +132,9 @@ func newCustomItemsUploadImageCmd() *cobra.Command {
 			if err := validate.PathParam("item-id", itemID); err != nil {
 				return err
 			}
-			file, err := requireString(cmd, "file")
+			file, data, err := requireUploadFile(cmd)
 			if err != nil {
 				return err
-			}
-
-			data, err := os.ReadFile(file)
-			if err != nil {
-				return fmt.Errorf("reading file %s: %w", file, err)
 			}
 
 			params := map[string]string{"itemId": itemID}
@@ -164,7 +159,7 @@ func newCustomItemsUploadImageCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("item-id", "", "Custom item ID (required)")
-	cmd.Flags().String("file", "", "Path to image file (required)")
+	addUploadFlag(cmd, "Path to image file (required)")
 	return cmd
 }
 

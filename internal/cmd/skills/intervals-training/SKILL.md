@@ -32,7 +32,7 @@ intervals activities <action> [flags]
 | `interval-search` | Search by interval criteria (`--json` for search body) |
 | `create-manual` | Create a manual activity (`--json`) |
 | `create-manual-bulk` | Create multiple manual activities (`--json`) |
-| `upload` | Upload an activity file FIT/TCX/GPX (`--file`) |
+| `upload` | Upload an activity file FIT/TCX/GPX (`--upload`) |
 | `download-csv` | Download all activities as CSV (prints to stdout, redirect with `> file.csv`) |
 | `list-around` | List activities around a specific activity (`--activity-id`) |
 | `get-multiple` | Get multiple activities by IDs (`--ids`) |
@@ -75,7 +75,7 @@ intervals activity <action> --activity-id <ID> [flags]
 | `split-interval` | Split an interval (`--interval-id`, `--json`) |
 | `streams` | Get activity streams (`--types`) |
 | `update-streams` | Update activity streams (`--json`) |
-| `upload-streams-csv` | Upload streams as CSV (`--file`) |
+| `upload-streams-csv` | Upload streams as CSV (`--json`) |
 | `power-curve` | Get power curve |
 | `power-curves` | Get power curves |
 | `power-histogram` | Get power histogram |
@@ -197,7 +197,7 @@ intervals wellness <action> [flags]
 | `update` | Update wellness record (`--date`, `--json`) |
 | `update-current` | Update today's wellness record (`--json`) |
 | `update-bulk` | Bulk update wellness records (`--json`) |
-| `upload` | Upload wellness data (`--file`) |
+| `upload` | Upload wellness data (`--json`) |
 | `list` | List wellness records (`--oldest`, `--newest`) |
 
 ### Examples

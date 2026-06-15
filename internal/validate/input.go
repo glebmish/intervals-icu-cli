@@ -3,6 +3,7 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,26 @@ func PathParam(name, value string) error {
 		}
 	}
 	return nil
+}
+
+// FilePath validates a user-supplied local file path before it is opened for
+// upload. Treats the path as adversarial (agents hallucinate): rejects control
+// characters and NUL bytes. Returns the cleaned path. Callers read the file;
+// this does not enforce a CWD sandbox so legitimate absolute upload paths still
+// work, but it blocks the obvious injection shapes.
+func FilePath(name, value string) (string, error) {
+	if value == "" {
+		return "", vErr("field %q: must not be empty", name)
+	}
+	for _, r := range value {
+		if r < 0x20 || r == 0x7f {
+			return "", vErr("field %q: contains control characters", name)
+		}
+	}
+	if strings.ContainsRune(value, 0) {
+		return "", vErr("field %q: contains NUL byte", name)
+	}
+	return filepath.Clean(value), nil
 }
 
 // IntParam validates that a string parses as a Go int (allows negatives).
